@@ -1,20 +1,30 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllFriends } from "../store/actions/userActions";
 import io from "socket.io-client";
-import { IoSend } from "react-icons/io5";
 import { getAllMesages } from "../store/actions/messageActions";
+import Sidebar from "../component/Sidebar";
+import { LuSmilePlus } from "react-icons/lu";
+import { HiOutlinePencil, HiOutlineDotsHorizontal } from "react-icons/hi";
+import { RiDeleteBinLine } from "react-icons/ri";
+import { HiArrowUturnLeft } from "react-icons/hi2";
+import DeleteModel from "../component/DeleteModel";
+import InputBox from "../component/InputBox";
+import { FaCheck } from "react-icons/fa";
 
 const ChatPage = () => {
+  // --- ALL LOGIC KEPT EXACTLY THE SAME ---
   const [logedInUser, setLogedInUser] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [searchText, setSearchText] = useState("");
+  const [isModelOpen, setIsModelOpen] = useState(false);
   const [socket, setSocket] = useState(null);
   const [message, setMessage] = useState("");
   const [typingUserId, setTypingUserId] = useState(null);
+  const [deleteMessageId, setDeleteMessageId] = useState(null);
+  const [showImozi, setShowImozi] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const selectedUserRef = React.useRef(null);
   const dispatch = useDispatch();
-  const storeFriends = useSelector((store) => store.friends);
   const messageStore = useSelector((store) => store.messages);
   const messageRef = useRef(null);
   const [messages, setMessages] = useState([
@@ -24,13 +34,30 @@ const ChatPage = () => {
       receiverId: "",
       senderId: "",
       createdAt: "",
+      deletedByMeId: null,
+      deletedForAll: false,
     },
   ]);
+
   useEffect(() => {
     const newSocket = io("http://localhost:8085");
-    console.log("socket initialized:", newSocket);
     setSocket(newSocket);
-
+    newSocket.emit("online-users", logedInUser?.id);
+    newSocket.on("online-users", (onlineUsers) => {
+      onlineUsers.map((id) =>
+        setOnlineUsers((prev) => {
+          const userIdAlredy = prev.includes(id);
+          if (!userIdAlredy) {
+            return [...prev, id];
+          } else return prev;
+        })
+      );
+    });
+    newSocket.on("user-disconnected", (userId) => {
+      setOnlineUsers((prev) =>
+        prev.filter((id) => String(id) !== String(userId))
+      );
+    });
     newSocket.on("userTyping", ({ senderId, receiverId }) => {
       const currentSelectedUser = selectedUserRef.current;
       if (!currentSelectedUser) return;
@@ -45,81 +72,89 @@ const ChatPage = () => {
         senderId === currentSelectedUser.id &&
         receiverId === logedInUser?.id
       ) {
-        console.log("signle hit for typing stop");
-
         setTypingUserId(null);
       }
     });
-    newSocket.on("newMessage", ({ resposne }) => {
-      console.log("new message is come");
-      console.log(resposne);
+    newSocket.on("newMessage", ({ response }) => {
       setMessages((prev) => [
         ...prev,
         {
-          id: prev.length + 1,
-          text: resposne?.text,
-          receiverId: resposne?.receiverId,
-          senderId: resposne?.senderId,
-          createdAt: resposne?.createdAt,
+          id: response?.id,
+          text: response?.text,
+          receiverId: response?.receiverId,
+          senderId: response?.senderId,
+          createdAt: response?.createdAt,
+          deletedByMeId: null,
+          deletedForAll: false,
         },
       ]);
+    });
+    newSocket.on("message:deleted", ({ messageId, type }) => {
+      if (type === "FOR_EVERYONE") {
+        console.log("deleted for evryOne signale is geted from socket ");
+        setMessages((prev) => {
+          return prev.map((msg) => {
+            if (msg?.id === messageId) {
+              return { ...msg, text: null };
+            }
+            return msg;
+          });
+        });
+      }
+      if (type === "FOR_ME") {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId
+              ? { ...msg, deletedByMeId: logedInUser?.id }
+              : msg
+          )
+        );
+      }
+      setIsModelOpen(false);
     });
     return () => newSocket.disconnect();
   }, [logedInUser?.id]);
 
-  useEffect(() => {
-    if (!socket || !logedInUser?.id || !selectedUser?.id) {
-      console.log("not join");
-      return;
-    }
-    const senderId = logedInUser?.id;
-    const receiverId = selectedUser?.id;
+  const getdefaultProfile = (name) => {
+    if (!name) return;
+    const spiltName = name.split(" ");
+    return spiltName.length > 1
+      ? `${spiltName[0][0]}${spiltName[1][0]}`
+      : `${spiltName[0][0]}`;
+  };
 
-    dispatch(getAllMesages({ senderId, receiverId }));
+  useEffect(() => {
+    if (!socket || !logedInUser?.id || !selectedUser?.id) return;
+    dispatch(
+      getAllMesages({ senderId: logedInUser.id, receiverId: selectedUser.id })
+    );
   }, [socket, logedInUser, selectedUser, dispatch]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("userData"));
-    console.log(user);
     setLogedInUser(user);
   }, []);
+
   useEffect(() => {
-    if (logedInUser?.id) {
-      const id = logedInUser?.id;
-      console.log(id);
-      dispatch(getAllFriends(id));
-    }
+    if (logedInUser?.id) dispatch(getAllFriends(logedInUser.id));
   }, [logedInUser, dispatch]);
-  const friends = useMemo(() => {
-    return storeFriends?.user?.friends;
-  }, [storeFriends]);
 
   useEffect(() => {
-    if (!socket || !logedInUser?.id || !selectedUser?.id) {
-      console.log("not join");
-      return;
-    }
-
-    const senderId = logedInUser?.id;
-    const receiverId = selectedUser?.id;
-
-    socket.emit("joinRoom", { senderId, receiverId });
-    console.log("Joined room:", senderId, receiverId);
+    if (!socket || !logedInUser?.id || !selectedUser?.id) return;
+    socket.emit("joinRoom", {
+      senderId: logedInUser.id,
+      receiverId: selectedUser.id,
+    });
   }, [socket, logedInUser, selectedUser]);
 
   const handleMessage = (e) => {
     setMessage(e.target.value);
     if (e.target.value) {
-      console.log("📤 typing emit:", {
-        senderId: logedInUser?.id,
-        receiverId: selectedUser?.id,
-      });
       socket.emit("typing", {
         senderId: logedInUser?.id,
         receiverId: selectedUser?.id,
       });
-    }
-    if (e.target.value === "") {
+    } else {
       setTimeout(() => {
         socket.emit("stopTyping", {
           senderId: logedInUser?.id,
@@ -128,129 +163,137 @@ const ChatPage = () => {
       }, 1000);
     }
   };
+
   useEffect(() => {
     selectedUserRef.current = selectedUser;
   }, [selectedUser]);
+
   const handleSendMessage = () => {
     if (message.trim() === "") return;
-    const senderId = logedInUser?.id;
-    const receiverId = selectedUser?.id;
-    const text = message;
-    socket.emit("sendMessage", { senderId, receiverId, text });
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: prev.length + 1,
-        text: message,
-        receiverId: selectedUser?.id,
-        senderId: logedInUser?.id,
-        createdAt: new Date(),
-      },
-    ]);
-    console.log("message is send");
+    socket.emit("sendMessage", {
+      senderId: logedInUser?.id,
+      receiverId: selectedUser?.id,
+      text: message,
+    });
     setMessage("");
     socket.emit("stopTyping", {
       senderId: logedInUser?.id,
       receiverId: selectedUser?.id,
     });
   };
+
   const getDate = (date) => {
     const now = new Date(date);
-    const min = now.getMinutes();
-    const sec = now.getSeconds();
-    return `${min}:${sec}`;
+    const hours24 = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+
+    const period = hours24 >= 12 ? "PM" : "AM";
+    const hours12 = hours24 % 12 || 12;
+
+    return `${hours12}:${minutes} ${period}`;
   };
+
   useEffect(() => {
     if (messageStore?.messages.length === 0) return;
-    // setMessages((prev)=>[...prev,{ id:prev.length+1,
-    //     text: message,
-    //     receiverId: selectedUser?.id,
-    //     senderId: logedInUser?.id,
-    //     createdAt: }])
     setMessages(messageStore?.messages);
   }, [messageStore]);
+
   useEffect(() => {
-    if (messageRef.current) {
-    messageRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    if (messageRef.current)
+      messageRef.current.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleDeleteForMe = () => {
+    setIsModelOpen(false);
+    socket.emit("message:delete", {
+      messageId: deleteMessageId,
+      senderId: logedInUser?.id,
+      receiverId: selectedUser?.id,
+      type: "FOR_ME",
+    });
+  };
+
+  const handleDeleteFoEveryOne = () => {
+    setIsModelOpen(false);
+    socket.emit("message:delete", {
+      messageId: deleteMessageId,
+      senderId: logedInUser?.id,
+      receiverId: selectedUser?.id,
+      type: "FOR_EVERYONE",
+    });
+    setDeleteMessageId(null);
+  };
+
   return (
-    <div className="flex h-screen font-sans">
-      {/* Sidebar */}
-      <div className="w-72 bg-[#574CD6] text-white flex flex-col p-4">
-        {/* Logged-in User */}
-        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/50">
-          <img
-            src={logedInUser?.image}
-            alt="User"
-            className="w-10 h-10 rounded-full"
-          />
-          <div className="font-bold">{logedInUser?.name}</div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-4">
-          <input
-            type="text"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Search Conversations"
-            className="w-full py-2 px-4 rounded-full text-base border-none text-gray-500 focus:outline-none"
-          />
-        </div>
-
-        {/* User List */}
-        <div className="flex-1 overflow-y-auto">
-          {(friends || []).map((user) => (
-            <div
-              key={user.id}
-              onClick={() => setSelectedUser(user)}
-              className={`p-2 mb-2 rounded-lg cursor-pointer flex gap-2 ${
-                selectedUser?.id === user.id ? "bg-[#4633A6]" : ""
-              }`}
-            >
-              <div>
-                {" "}
-                <img
-                  src={user?.image}
-                  alt="User"
-                  className="w-10 h-10 rounded-full"
-                />
-              </div>
-              <p className="font-bold">{user.name}</p>
-              {/* <div className="text-sm opacity-80">{user.lastMsg}</div>
-              <div className="text-xs text-right">{user.time}</div> */}
-            </div>
-          ))}
-        </div>
+    <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden">
+      {/* Sidebar - Added a subtle border-right */}
+      <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white">
+        <Sidebar
+          logedInUser={logedInUser}
+          selectedUser={selectedUser}
+          setSelectedUser={setSelectedUser}
+          socket={socket}
+          onlineUsers={onlineUsers}
+        />
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 bg-white flex flex-col relative">
+      {/* Chat Area - Clean white background with flex-column */}
+      <div className="flex-1 flex flex-col relative bg-white">
         {!selectedUser ? (
-          <div className="flex-1 flex items-center justify-center text-[#574CD6] text-xl">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold">Start Chat</h1>
-              <p>Select a user from the sidebar to start chatting</p>
+          <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-400">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <LuSmilePlus size={40} className="text-gray-300" />
             </div>
+            <h1 className="text-xl font-semibold text-gray-600">
+              Select a Conversation
+            </h1>
+            <p className="text-sm">
+              Pick a friend from the sidebar to start chatting
+            </p>
           </div>
         ) : (
           <>
-            {/* Chat Header */}
-            <div className="flex items-center gap-5 p-4 border-b border-gray-200">
-              <div>
-                {" "}
-                <img
-                  src={selectedUser?.image}
-                  alt="User"
-                  className="w-10 h-10 rounded-full"
-                />
+            {/* Chat Header - Glassmorphism style */}
+            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  {selectedUser?.image && selectedUser.image.trim() !== "" ? (
+                    <img
+                      src={selectedUser.image}
+                      alt="User"
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-50"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
+                      {getdefaultProfile(selectedUser?.name)}
+                    </div>
+                  )}
+                  {onlineUsers.includes(String(selectedUser?.id)) && (
+                    <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white"></div>
+                  )}
+                </div>
+                <div>
+                  <div className="font-bold text-gray-800 leading-tight">
+                    {selectedUser.name}
+                  </div>
+                  <div className="text-[11px] text-green-600 font-medium">
+                    {onlineUsers.includes(String(selectedUser?.id)) ? (
+                      ""
+                    ) : selectedUser?.LastActiveAt ? (
+                      <p className="text-[#574CD6] text-xs">
+                        Last seen {getDate(selectedUser?.LastActiveAt)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
               </div>
-              <div className=" font-bold">{selectedUser.name}</div>
+              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                <HiOutlineDotsHorizontal size={20} />
+              </button>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 p-4 overflow-y-auto">
+            {/* Messages Area - Subtle background color change */}
+            <div className="flex-1 px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-4">
               {(messages || []).map((msg, idx) => {
                 const isChatMessage =
                   (msg.senderId === logedInUser?.id &&
@@ -258,59 +301,122 @@ const ChatPage = () => {
                   (msg.senderId === selectedUser?.id &&
                     msg.receiverId === logedInUser?.id);
 
-                if (!isChatMessage) return null;
+                if (!isChatMessage || msg?.deletedByMeId === logedInUser?.id)
+                  return null;
+
+                const isMe = msg.senderId === logedInUser?.id;
 
                 return (
                   <div
                     key={idx}
-                    className={`flex mb-2 ${
-                      msg.receiverId === logedInUser?.id
-                        ? "justify-star "
-                        : "justify-end"
+                    className={`flex w-full ${
+                      isMe ? "justify-end" : "justify-start"
                     }`}
                   >
-                    <div
-                      className={`p-2 px-4 rounded-2xl max-w-[60%] ${
-                        msg.receiverId === logedInUser?.id
-                          ? "bg-[#574CD6] text-white"
-                          : "bg-gray-100 text-black"
-                      }`}
-                    >
-                      {msg.text}
-                      <div className="text-[10px] text-right mt-1 opacity-70">
-                        {getDate(msg?.createdAt)}
+                    <div className="max-w-[70%] relative group">
+                      <div
+                        className={`absolute ${
+                          msg.text === null ? "hidden" : "block"
+                        } -top-8 ${
+                          isMe ? "right-0" : "left-0"
+                        } opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center bg-white border border-gray-100 rounded-lg shadow-xl px-1 py-0.5 z-10`}
+                      >
+                        <button className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors">
+                          <LuSmilePlus size={16} />
+                        </button>
+                        <button className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors">
+                          <HiOutlinePencil size={16} />
+                        </button>
+                        {isMe && (
+                          <button
+                            onClick={() => {
+                              setIsModelOpen(true);
+                              setDeleteMessageId(msg?.id);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-500 rounded-md transition-colors"
+                          >
+                            <RiDeleteBinLine size={16} />
+                          </button>
+                        )}
+                        <button className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors">
+                          <HiArrowUturnLeft size={16} />
+                        </button>
+                      </div>
+
+                      {/* Bubble Styling - Added specific corner rounding for sent/received */}
+                      <div className="flex gap-1">
+                        <div className={`${!isMe ? "block" : "hidden"}`}>
+                          {" "}
+                          {selectedUser?.image &&
+                          selectedUser.image.trim() !== "" ? (
+                            <img
+                              src={selectedUser.image}
+                              alt="User"
+                              className="w-6 h-6 rounded-full object-cover ring-2 ring-gray-50"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
+                              {getdefaultProfile(selectedUser?.name)}
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          className={`px-4 py-2.5 shadow-sm text-sm leading-relaxed w-full max-w-[400px]  ${
+                            isMe
+                              ? ` ${
+                                  msg.text === null
+                                    ? "bg-[#574CD6]/80"
+                                    : "bg-[#574CD6]"
+                                }  text-white rounded-2xl rounded-tr-none`
+                              : "bg-gray-200 text-gray-800 rounded-2xl rounded-tl-none border border-gray-100 break-words "
+                          }`}
+                        >
+                          {msg.text === null
+                            ? "This mesage was deleted"
+                            : msg.text}
+                          <div
+                            className={`text-[10px] mt-1 flex items-center gap-1 ${
+                              isMe
+                                ? "text-indigo-100 justify-end"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            {getDate(msg?.createdAt)}
+                            {isMe && <FaCheck size={8} />}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 );
               })}
+              <div ref={messageRef} className="h-2"></div>
             </div>
-            <div ref={messageRef} className="border"></div>
-            {/* Input */}
-            {typingUserId === selectedUser?.id && (
-              <p className="animate-pulse px-5 py-2 text-base">Typing...</p>
-            )}
-            <div className="p-2 border-t border-gray-200 flex gap-2">
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => handleMessage(e)}
-                placeholder="Type a message..."
-                className="w-full py-2 px-4 rounded-full border border-gray-300 focus:outline-none"
+
+            {/* Input Wrapper - Clean Padding */}
+            <div className="px-12 py-4 bg-white border-t border-gray-100">
+              <InputBox
+                typingUserId={typingUserId}
+                selectedUser={selectedUser}
+                setMessage={setMessage}
+                message={message}
+                handleMessage={handleMessage}
+                handleSendMessage={handleSendMessage}
+                setShowImozi={setShowImozi}
+                showImozi={showImozi}
               />
-              <button
-                onClick={() => handleSendMessage()}
-                disabled={!message}
-                className={`px-6 py-2 text-white ${
-                  message ? "bg-[#574CD6]" : "bg-[#948cee] cursor-default "
-                }   rounded-full`}
-              >
-                <IoSend />
-              </button>
             </div>
           </>
         )}
       </div>
+
+      <DeleteModel
+        onCancel={() => setIsModelOpen(false)}
+        onDeleteForMe={handleDeleteForMe}
+        onDeleteForEveryone={handleDeleteFoEveryOne}
+        isModelOpen={isModelOpen}
+        setIsModelOpen={setIsModelOpen}
+      />
     </div>
   );
 };

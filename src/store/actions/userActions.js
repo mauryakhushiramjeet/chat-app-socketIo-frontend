@@ -5,11 +5,11 @@ export const getLogedInUser = createAsyncThunk(
   "auth/loginuserDetailes",
   async (id, { rejectWithValue }) => {
     try {
-      const resposne = await axiosInstance.get(`/logedInUser/${id}`);
-      if (resposne.data.success) {
-        return resposne.data;
+      const response = await axiosInstance.get(`/logedInUser/${id}`);
+      if (response.data.success) {
+        return response.data;
       } else {
-        return rejectWithValue(resposne.data.message);
+        return rejectWithValue(response.data.message);
       }
     } catch (error) {
       console.log(error);
@@ -46,9 +46,23 @@ export const getAllFriends = createAsyncThunk(
   "get/freinds",
   async (id, { rejectWithValue }) => {
     try {
-      console.log(id)
-      const resposne = await axiosInstance.get(`/getFriends/${id}`);
-      return resposne.data;
+      console.log(id);
+      const response = await axiosInstance.get(`/getFriends/${id}`);
+      return response.data;
+    } catch (error) {
+      console.log("AXIOS ERROR:", error.response);
+      return rejectWithValue(error?.response?.data?.message);
+    }
+  }
+);
+export const getConversationsUsers = createAsyncThunk(
+  "get/convUser",
+  async (loggedInUserId, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get("/userConversations", {
+        params: { loggedInUserId },
+      });
+      return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
       return rejectWithValue(error?.response?.data?.message);

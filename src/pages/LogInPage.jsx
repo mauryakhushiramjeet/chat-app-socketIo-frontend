@@ -91,7 +91,7 @@ const LoginPage = () => {
 
         <p className="text-center text-gray-500 mt-4">
           Create new account?{" "}
-          <a href="/" className="text-indigo-600 hover:underline">
+          <a href="/signup" className="text-indigo-600 hover:underline">
             Signup
           </a>
         </p>
