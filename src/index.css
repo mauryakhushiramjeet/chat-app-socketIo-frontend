@@ -67,3 +67,12 @@
 .user-item-transition {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* Add this in your CSS file or global styles */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+

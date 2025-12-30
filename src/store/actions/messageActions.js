@@ -8,7 +8,7 @@ export const getAllMesages = createAsyncThunk(
       const response = await axiosInstance.get("/getMessages", {
         params: { senderId, receiverId },
       });
-      console.log(response);
+      // console.log(response);
       return response.data.messages;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);

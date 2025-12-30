@@ -62,7 +62,7 @@ const Sidebar = ({
 
     // socket.on("newMessage", { handleNewMessage });
     socket.on("newMessage", ({ response, conversationId }) => {
-      console.log("new message for conversation update is getted....");
+      // console.log("new message for conversation update is getted....");
       setUsers((prevUsers) => {
         const conversationIndex = prevUsers.findIndex(
           (item) => item.id === conversationId.id

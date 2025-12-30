@@ -11,6 +11,8 @@ import { HiArrowUturnLeft } from "react-icons/hi2";
 import DeleteModel from "../component/DeleteModel";
 import InputBox from "../component/InputBox";
 import { FaCheck } from "react-icons/fa";
+import { IoCheckmark, IoCheckmarkDone, IoTimeOutline } from "react-icons/io5";
+import { current } from "@reduxjs/toolkit";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -24,22 +26,26 @@ const ChatPage = () => {
   const [showImozi, setShowImozi] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const selectedUserRef = React.useRef(null);
+  const onlineUserRef = React.useRef(null);
+
   const dispatch = useDispatch();
   const messageStore = useSelector((store) => store.messages);
   const messageRef = useRef(null);
   const [messages, setMessages] = useState([
-    {
-      id: "",
-      text: "",
-      receiverId: "",
-      senderId: "",
-      createdAt: "",
-      deletedByMeId: null,
-      deletedForAll: false,
-    },
+    // {
+    //   id: "",
+    //   text: "",
+    //   receiverId: "",
+    //   senderId: "",
+    //   createdAt: "",
+    //   status: "",
+    //   deletedByMeId: null,
+    //   deletedForAll: false,
+    // },
   ]);
-
+  // console.log(onlineUsers);
   useEffect(() => {
+    if (!logedInUser) return;
     const newSocket = io("http://localhost:8085");
     setSocket(newSocket);
     newSocket.emit("online-users", logedInUser?.id);
@@ -75,20 +81,71 @@ const ChatPage = () => {
         setTypingUserId(null);
       }
     });
-    newSocket.on("newMessage", ({ response }) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: response?.id,
-          text: response?.text,
-          receiverId: response?.receiverId,
-          senderId: response?.senderId,
-          createdAt: response?.createdAt,
-          deletedByMeId: null,
-          deletedForAll: false,
-        },
-      ]);
+    newSocket.on("status:send", ({ clientMessageId }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.clientMessageId === clientMessageId
+            ? { ...msg, status: "Send" }
+            : msg
+        )
+      );
     });
+    newSocket.on("newMessage", ({ clientMessageId, response }) => {
+      const currentSelectedUser = selectedUserRef.current;
+
+      console.log(
+        "geted new message",
+        response,
+        "and clientId",
+        clientMessageId
+      );
+
+      setMessages((prev) => {
+        const updated = prev.map((msg) =>
+          msg.clientMessageId === clientMessageId
+            ? { ...response, status: "Send" }
+            : msg
+        );
+
+        const exist = updated.some((m) => m.id === response.id);
+        if (!exist) {
+          return [...updated, { ...response, status: "Send" }];
+        }
+
+        return updated;
+      });
+      const currentOnlineUser = onlineUserRef.current;
+      const recieverSocketId = currentOnlineUser.includes(
+        String(logedInUser?.id)
+      );
+
+      if (response?.receiverId === logedInUser?.id && recieverSocketId) {
+        if (currentSelectedUser?.id === response?.senderId) {
+          console.log("send signal for read message from client to server");
+          newSocket.emit("status:Read", { messageId: response?.id });
+        } else {
+          newSocket.emit("status:delivered", { messageId: response?.id });
+          console.log("send only deliver signal from client to server");
+        }
+      }
+    });
+    newSocket.on("status:Read", ({ messageId }) => {
+      console.log("gated signal for read", messageId);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, status: "Read" } : msg
+        )
+      );
+    });
+    newSocket.on("status:delivered", ({ messageId }) => {
+      console.log("deleverd is also come");
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, status: "Delivered" } : msg
+        )
+      );
+    });
+
     newSocket.on("message:deleted", ({ messageId, type }) => {
       if (type === "FOR_EVERYONE") {
         console.log("deleted for evryOne signale is geted from socket ");
@@ -112,9 +169,11 @@ const ChatPage = () => {
       }
       setIsModelOpen(false);
     });
+
     return () => newSocket.disconnect();
   }, [logedInUser?.id]);
 
+  // console.log(selectedUser);
   const getdefaultProfile = (name) => {
     if (!name) return;
     const spiltName = name.split(" ");
@@ -122,13 +181,49 @@ const ChatPage = () => {
       ? `${spiltName[0][0]}${spiltName[1][0]}`
       : `${spiltName[0][0]}`;
   };
-
   useEffect(() => {
-    if (!socket || !logedInUser?.id || !selectedUser?.id) return;
-    dispatch(
-      getAllMesages({ senderId: logedInUser.id, receiverId: selectedUser.id })
+    onlineUserRef.current = onlineUsers;
+  }, [onlineUsers]);
+  useEffect(() => {
+    if (!socket || !logedInUser?.id) return;
+    if (!messages || messages.length === 0) return;
+    // console.log(onlineUsers, "online user");
+    const unDeliveredMessages = messages.filter(
+      (msg) => msg.receiverId === logedInUser.id && msg.status === "Send"
     );
-  }, [socket, logedInUser, selectedUser, dispatch]);
+    // console.log(messages);
+    if (
+      onlineUsers.includes(String(logedInUser.id)) &&
+      unDeliveredMessages.length > 0
+    ) {
+      unDeliveredMessages.forEach((msg) => {
+        socket.emit("status:delivered", {
+          messageId: msg.id,
+        });
+      });
+    }
+    const unReadedMessage = messages.filter(
+      (msg) =>
+        msg?.receiverId === logedInUser?.id &&
+        msg?.senderId === selectedUser?.id &&
+        msg?.status === "Delivered"
+    );
+    if (unReadedMessage && onlineUsers.includes(String(logedInUser.id))) {
+      unReadedMessage.forEach((msg) => {
+        socket.emit("status:Read", { messageId: msg?.id });
+      });
+    }
+  }, [socket, logedInUser?.id, onlineUsers, messages, messageStore]);
+  useEffect(() => {
+    if (!logedInUser?.id || !selectedUser?.id) return;
+
+    dispatch(
+      getAllMesages({
+        senderId: logedInUser.id,
+        receiverId: selectedUser.id,
+      })
+    );
+  }, [logedInUser?.id, selectedUser?.id, dispatch]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("userData"));
@@ -169,11 +264,30 @@ const ChatPage = () => {
   }, [selectedUser]);
 
   const handleSendMessage = () => {
+    const clientMessageId = crypto.randomUUID();
+
     if (message.trim() === "") return;
     socket.emit("sendMessage", {
+      clientMessageId,
       senderId: logedInUser?.id,
       receiverId: selectedUser?.id,
       text: message,
+    });
+    setMessages((prev) => {
+      return [
+        ...prev,
+        {
+          clientMessageId,
+          id: null,
+          text: message,
+          receiverId: selectedUser?.id,
+          senderId: logedInUser.id,
+          status: "Pending",
+          createdAt: new Date(),
+          deletedByMeId: null,
+          deletedForAll: false,
+        },
+      ];
     });
     setMessage("");
     socket.emit("stopTyping", {
@@ -223,7 +337,20 @@ const ChatPage = () => {
     });
     setDeleteMessageId(null);
   };
-
+  const MessageStatus = ({ status }) => {
+    switch (status) {
+      case "Pending":
+        return <IoTimeOutline size={13} />;
+      case "Send":
+        return <IoCheckmark size={15} />;
+      case "Delivered":
+        return <IoCheckmarkDone size={15} />;
+      case "Read":
+        return <IoCheckmarkDone className="text-cyan-400" size={15} />;
+      default:
+        return null;
+    }
+  };
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden">
       {/* Sidebar - Added a subtle border-right */}
@@ -343,7 +470,6 @@ const ChatPage = () => {
                         </button>
                       </div>
 
-                      {/* Bubble Styling - Added specific corner rounding for sent/received */}
                       <div className="flex gap-1">
                         <div className={`${!isMe ? "block" : "hidden"}`}>
                           {" "}
@@ -361,28 +487,45 @@ const ChatPage = () => {
                           )}
                         </div>
                         <div
-                          className={`px-4 py-2.5 shadow-sm text-sm leading-relaxed w-full max-w-[400px]  ${
+                          className={`px-4 py-2 shadow-sm text-sm leading-relaxed w-full max-w-[400px] ${
                             isMe
-                              ? ` ${
+                              ? `${
                                   msg.text === null
                                     ? "bg-[#574CD6]/80"
                                     : "bg-[#574CD6]"
-                                }  text-white rounded-2xl rounded-tr-none`
-                              : "bg-gray-200 text-gray-800 rounded-2xl rounded-tl-none border border-gray-100 break-words "
+                                } text-white rounded-2xl rounded-tr-none`
+                              : "bg-gray-200 text-gray-800 rounded-2xl rounded-tl-none border border-gray-100 break-words"
                           }`}
                         >
-                          {msg.text === null
-                            ? "This mesage was deleted"
-                            : msg.text}
+                          {/* Message Text */}
+                          <div
+                            className={
+                              msg.text === null
+                                ? "italic opacity-70 text-[13px]"
+                                : ""
+                            }
+                          >
+                            {msg.text === null
+                              ? "This message was deleted"
+                              : msg.text}
+                          </div>
+
+                          {/* Footer: Time + Status */}
                           <div
                             className={`text-[10px] mt-1 flex items-center gap-1 ${
                               isMe
                                 ? "text-indigo-100 justify-end"
-                                : "text-gray-400"
+                                : "text-gray-500 justify-start"
                             }`}
                           >
-                            {getDate(msg?.createdAt)}
-                            {isMe && <FaCheck size={8} />}
+                            <span>{getDate(msg?.createdAt)}</span>
+
+                            {/* Status Icons - Only show for messages I sent */}
+                            {isMe && (
+                              <span className="flex items-center ml-0.5">
+                                <MessageStatus status={msg.status} />
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
