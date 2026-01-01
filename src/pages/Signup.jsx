@@ -47,7 +47,7 @@ const SignupPage = () => {
           } else {
             toast.error(res.message);
           }
-        });
+        })
     } catch (err) {
       console.log(err);
     }

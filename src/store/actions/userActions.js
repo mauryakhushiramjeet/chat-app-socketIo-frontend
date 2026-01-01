@@ -46,7 +46,6 @@ export const getAllFriends = createAsyncThunk(
   "get/freinds",
   async (id, { rejectWithValue }) => {
     try {
-      console.log(id);
       const response = await axiosInstance.get(`/getFriends/${id}`);
       return response.data;
     } catch (error) {
@@ -62,6 +61,19 @@ export const getConversationsUsers = createAsyncThunk(
       const response = await axiosInstance.get("/userConversations", {
         params: { loggedInUserId },
       });
+      return response.data;
+    } catch (error) {
+      console.log("AXIOS ERROR:", error.response);
+      return rejectWithValue(error?.response?.data?.message);
+    }
+  }
+);
+
+export const updateProfileThunk = createAsyncThunk(
+  "update/profile",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put("/updateProfile", formData);
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);

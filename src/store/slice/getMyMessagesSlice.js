@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getAllMessages } from "../actions/messageActions.js";
-const getAllMessagesSlice = createSlice({
-  name: "messages",
+import { getAllReceiverMesages } from "../actions/messageActions.js";
+const getMyMessagesSlice = createSlice({
+  name: "getMyMessages",
   initialState: {
     messages: [],
     isLoading: false,
@@ -10,20 +10,20 @@ const getAllMessagesSlice = createSlice({
   reducers: {},
   extraReducers: (building) => {
     building
-      .addCase(getAllMessages.pending, (state, action) => {
+      .addCase(getAllReceiverMesages.pending, (state, action) => {
         state.isError = false;
         state.isLoading = true;
       })
-      .addCase(getAllMessages.fulfilled, (state, action) => {
+      .addCase(getAllReceiverMesages.fulfilled, (state, action) => {
         state.isError = false;
         state.isLoading = false;
         state.messages = action.payload;
       })
-      .addCase(getAllMessages.rejected, (state, action) => {
+      .addCase(getAllReceiverMesages.rejected, (state, action) => {
         state.isError = true;
         state.isLoading = false;
       });
   },
 });
 
-export default getAllMessagesSlice.reducer;
+export default getMyMessagesSlice.reducer;

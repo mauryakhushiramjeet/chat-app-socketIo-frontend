@@ -32,7 +32,7 @@ const InputBox = ({
 
   useEffect(() => {
     if (textRef.current) {
-      // textRef.current.style.height = "auto";
+      textRef.current.style.height = "auto";
       textRef.current.style.height = `${textRef.current.scrollHeight}px`;
     }
   }, [message]);
@@ -72,7 +72,7 @@ const InputBox = ({
             placeholder="Type a message..."
             rows={0.5}
             // cols={1}
-            className="w-full py-2 pl-4 pr-28 hide-scrollbar resize-none max-h-36 overflow-hidden rounded-lg border border-gray-300 focus:outline-none overflow-y-auto"
+            className="w-full py-2 pl-4 pr-28 hide-scrollbar resize-none max-h-[200px] overflow-hidden rounded-lg border border-gray-300 focus:outline-none overflow-y-auto"
           />
           <button
             onClick={() => setShowImozi(true)}
