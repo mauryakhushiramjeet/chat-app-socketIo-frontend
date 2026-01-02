@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllFriends } from "../store/actions/userActions";
 import io from "socket.io-client";
 import {
   getAllReceiverMesages,
   getAllMessages,
+  getGroupMessages,
 } from "../store/actions/messageActions";
 import Sidebar from "../component/Sidebar";
 import { LuSmilePlus } from "react-icons/lu";
@@ -31,12 +32,14 @@ const ChatPage = () => {
   const [editMessageId, setEditMessageId] = useState(null);
   const [editedMessage, setEditedMesage] = useState("");
   const [allReceiverMessages, setAllReceiverMessages] = useState([]);
+  const [groupMessages, setGroupMessages] = useState([]);
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
 
   const dispatch = useDispatch();
   const messageStore = useSelector((store) => store.messages);
   const receiverMessageStore = useSelector((store) => store.getMyMessages);
+  const groupMessageStore = useSelector((store) => store.groupMessages);
   const messageRef = useRef(null);
   const [messages, setMessages] = useState([]);
 
@@ -61,7 +64,6 @@ const ChatPage = () => {
       );
     });
     newSocket.on("editMessage:error", ({ message }) => {
-      console.log("edity message error here", message);
       setEditMessageId(null);
     });
     newSocket.on("userTyping", ({ senderId, receiverId }) => {
@@ -91,7 +93,6 @@ const ChatPage = () => {
       );
     });
     newSocket.on("editMessage", ({ messageId, newText }) => {
-      console.log("geted signal for edit text", messageId, newText);
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === messageId ? { ...msg, text: newText } : msg
@@ -178,6 +179,29 @@ const ChatPage = () => {
       }
       setIsModelOpen(false);
     });
+    newSocket.on("receiveGropMessage", (data) => {
+      console.log("New group message received:", data);
+
+      setMessages((prevMessages) => {
+        const exists = prevMessages.some((msg) => msg.id === data.messageId);
+        if (exists) return prevMessages;
+
+        return [
+          ...prevMessages,
+          {
+            id: data.messageId,
+            text: data.message,
+            senderId: data.sender?.id,
+            groupId: data.groupId,
+            sender: data.sender,
+            receiverId: null,
+            createdAt: new Date(),
+            status: "Send",
+            deletedByMeId: null,
+          },
+        ];
+      });
+    });
 
     return () => newSocket.disconnect();
   }, [logedInUser?.id]);
@@ -193,6 +217,21 @@ const ChatPage = () => {
   useEffect(() => {
     onlineUserRef.current = onlineUsers;
   }, [onlineUsers]);
+  const normalizeGroupMessages = (groupMessages, currentUserId) => {
+    const isGroupMessage = selectedUser?.type === "group" ? true : false;
+    return groupMessages.map((msg) => ({
+      id: isGroupMessage ? `groupMessage-${msg.id}` : msg.id,
+      text: msg.text,
+      senderId: msg.userId,
+      receiverId: null,
+      groupId: msg.groupId,
+      sender: msg.sender,
+      createdAt: msg.createdAt,
+      status: "Send",
+      deletedByMeId: null,
+    }));
+  };
+
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (!messages || messages.length === 0) return;
@@ -241,7 +280,7 @@ const ChatPage = () => {
   ]);
   useEffect(() => {
     if (!logedInUser?.id || !selectedUser?.id) return;
-
+    if (!selectedUser || selectedUser?.type === "group") return;
     dispatch(
       getAllMessages({
         senderId: logedInUser.id,
@@ -288,40 +327,57 @@ const ChatPage = () => {
     selectedUserRef.current = selectedUser;
     setEditMessageId(null);
   }, [selectedUser]);
+  // console.log(selectedUser, "at chat");
 
   const handleSendMessage = () => {
-    const clientMessageId = crypto.randomUUID();
-
     if (message.trim() === "") return;
+    if (selectedUser?.type === "group") {
+      const id = selectedUser?.id;
+      const groupId = id.split("-")[1];
+      socket.emit("sendGroupMessage", {
+        groupId: groupId,
+        message,
+        messageSenderId: logedInUser?.id,
+      });
+      console.log("group message is send", {
+        groupId: selectedUser?.id,
+        message,
+        messageSenderId: logedInUser?.id,
+      });
+      setMessage("");
+    } else {
+      const clientMessageId = crypto.randomUUID();
 
-    socket.emit("sendMessage", {
-      clientMessageId,
-      senderId: logedInUser?.id,
-      receiverId: selectedUser?.id,
-      text: message,
-    });
-    setMessages((prev) => {
-      return [
-        ...prev,
-        {
-          clientMessageId,
-          id: null,
-          text: message,
-          receiverId: selectedUser?.id,
-          senderId: logedInUser.id,
-          status: "Pending",
-          createdAt: new Date(),
-          deletedByMeId: null,
-          deletedForAll: false,
-        },
-      ];
-    });
+      socket.emit("sendMessage", {
+        clientMessageId,
+        senderId: logedInUser?.id,
+        receiverId: selectedUser?.id,
+        text: message,
+        type: selectedUser?.type,
+      });
+      setMessages((prev) => {
+        return [
+          ...prev,
+          {
+            clientMessageId,
+            id: null,
+            text: message,
+            receiverId: selectedUser?.id,
+            senderId: logedInUser.id,
+            status: "Pending",
+            createdAt: new Date(),
+            deletedByMeId: null,
+            deletedForAll: false,
+          },
+        ];
+      });
 
-    setMessage("");
-    socket.emit("stopTyping", {
-      senderId: logedInUser?.id,
-      receiverId: selectedUser?.id,
-    });
+      setMessage("");
+      socket.emit("stopTyping", {
+        senderId: logedInUser?.id,
+        receiverId: selectedUser?.id,
+      });
+    }
   };
   useEffect(() => {
     if (!logedInUser?.id) return;
@@ -341,13 +397,34 @@ const ChatPage = () => {
     }
   }, [receiverMessageStore]);
   useEffect(() => {
+    if (
+      !groupMessageStore.isError &&
+      !groupMessageStore.isLoading &&
+      groupMessageStore?.messages
+    ) {
+      const normalized = normalizeGroupMessages(
+        groupMessageStore.messages,
+        logedInUser?.id
+      );
+      setMessages(normalized);
+    }
+  }, [groupMessageStore, logedInUser?.id]);
+
+  console.log("group messages", messages);
+  useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (allReceiverMessages.length === 0 || !allReceiverMessages) return;
     allReceiverMessages.forEach((msg) => {
       socket.emit("status:delivered", { messageId: msg.id });
     });
   }, [socket, logedInUser?.id, allReceiverMessages]);
-
+  useEffect(() => {
+    if (!selectedUser || selectedUser?.type !== "group" || !selectedUser?.id)
+      return;
+    const id = selectedUser?.id;
+    const groupId = id.split("-")[1];
+    dispatch(getGroupMessages(groupId));
+  }, [selectedUser]);
   const getDate = (date) => {
     const now = new Date(date);
     const hours24 = now.getHours();
@@ -419,6 +496,11 @@ const ChatPage = () => {
     setEditMessageId(null);
     setEditMessageId("");
   };
+  const isGroupChat = useMemo(() => {
+    return selectedUser?.type === "group" ? true : false;
+  }, [selectedUser]);
+  console.log(isGroupChat);
+
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden">
       {/* Sidebar - Added a subtle border-right */}
@@ -492,15 +574,23 @@ const ChatPage = () => {
             <div className="flex-1 px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-4">
               {(messages || []).map((msg, idx) => {
                 const isChatMessage =
-                  (msg.senderId === logedInUser?.id &&
-                    msg.receiverId === selectedUser?.id) ||
-                  (msg.senderId === selectedUser?.id &&
-                    msg.receiverId === logedInUser?.id);
+                  selectedUser?.type === "group"
+                    ? msg.groupId === Number(selectedUser.id.split("-")[1])
+                    : (msg.senderId === logedInUser?.id &&
+                        msg.receiverId === selectedUser?.id) ||
+                      (msg.senderId === selectedUser?.id &&
+                        msg.receiverId === logedInUser?.id);
 
                 if (!isChatMessage || msg?.deletedByMeId === logedInUser?.id)
                   return null;
 
                 const isMe = msg.senderId === logedInUser?.id;
+                const avatarUser =
+                  selectedUser?.type === "group"
+                    ? msg.sender.image
+                    : selectedUser?.image && selectedUser.image.trim() !== ""
+                    ? selectedUser?.image
+                    : "";
 
                 return (
                   <div
@@ -560,7 +650,7 @@ const ChatPage = () => {
                           {selectedUser?.image &&
                           selectedUser.image.trim() !== "" ? (
                             <img
-                              src={selectedUser.image}
+                              src={avatarUser}
                               alt="User"
                               className="w-6 h-6 rounded-full object-cover ring-2 ring-gray-50"
                             />

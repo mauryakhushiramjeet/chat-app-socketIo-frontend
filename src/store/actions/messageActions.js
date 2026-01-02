@@ -16,6 +16,7 @@ export const getAllMessages = createAsyncThunk(
     }
   }
 );
+// For chaeking at receiver side to update its message status
 export const getAllReceiverMesages = createAsyncThunk(
   "get/getAllMyMessages",
   async ({ receiverId }, { rejectWithValue }) => {
@@ -29,6 +30,23 @@ export const getAllReceiverMesages = createAsyncThunk(
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
       return rejectWithValue(error?.response?.data?.message);
+    }
+  }
+);
+
+export const getGroupMessages = createAsyncThunk(
+  "get/groupMessages",
+  async (groupId, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get("/getGroupMessages", {
+        params: { groupId },
+      });
+      return response.data.messages;
+    } catch (error) {
+      console.log("AXIOS ERROR:", error.response);
+      return rejectWithValue(
+        error?.response?.data?.message || "Something went wrong"
+      );
     }
   }
 );

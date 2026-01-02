@@ -17,6 +17,7 @@ import { RxCross2 } from "react-icons/rx";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { createGroup } from "../store/actions/groupAction";
+import { getSidebarChatList } from "../store/actions/sidebarChatListActions";
 
 const Sidebar = ({
   logedInUser,
@@ -49,13 +50,12 @@ const Sidebar = ({
     image: logedInUser?.image || "",
     file: "",
   });
-
+  const sidebarChatListStore = useSelector((store) => store.sidebarChatList);
   const [showProfile, setShowProfile] = useState(false);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const storeFriends = useSelector((store) => store.friends);
   const dispatch = useDispatch();
-  const usersStore = useSelector((store) => store.conversationUser);
   const friends = useMemo(() => {
     return storeFriends?.user?.friends;
   }, [storeFriends]);
@@ -100,11 +100,13 @@ const Sidebar = ({
 
   const handleCreateGroup = () => {
     if (!groupName.trim()) return toast.error("Please enter a group name");
-    if (selectedMembers.length < 2)
-      return toast.error("Select at least 2 members");
     if (logedInUser) {
       selectedMembers.push(logedInUser?.id);
     }
+    console.log(selectedMembers);
+    if (selectedMembers.length < 2)
+      return toast.error("Select at least 2 members");
+
     console.log("Creating group:", { groupName, selectedMembers, groupImage });
 
     const formData = new FormData();
@@ -144,8 +146,6 @@ const Sidebar = ({
 
   useEffect(() => {
     if (!logedInUser) return;
-    const loggedInUserId = logedInUser?.id;
-    dispatch(getConversationsUsers(loggedInUserId));
     setProfile((prev) => ({
       ...prev,
       name: logedInUser?.name,
@@ -158,57 +158,100 @@ const Sidebar = ({
       about: logedInUser?.about ?? "Avalable",
       image: logedInUser?.image,
     }));
+    dispatch(getSidebarChatList({ loggedInUserId: logedInUser?.id }));
   }, [logedInUser, dispatch]);
 
   useEffect(() => {
-    if (!usersStore?.isError && !usersStore?.isLoading) {
-      setUsers(usersStore?.conversationUser?.formatedCobnversation || []);
+    if (!sidebarChatListStore?.isError && !sidebarChatListStore?.isLoading) {
+      const normalizedUsers = (
+        sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions || []
+      ).map((item) => {
+        return {
+          id: item.type === "group" ? `group-${item.id}` : item.chatUser?.id,
+          type: item.type,
+          name: item.type === "group" ? item.name : item.chatUser?.name,
+          image: item.type === "group" ? item.groupImage : item.chatUser?.image,
+          lastMessage: item.lastMessage || "Tap to chat",
+          lastMessageCreatedAt: item.lastMessageCreatedAt || null,
+        };
+      });
+
+      setUsers(normalizedUsers);
     }
-  }, [usersStore]);
+  }, [sidebarChatListStore]);
 
   useEffect(() => {
     if (!socket) return;
-    socket.on("newMessage", ({ response, conversationId }) => {
-      setUsers((prevUsers) => {
-        const conversationIndex = prevUsers.findIndex(
-          (item) => item.id === conversationId.id
+    socket.on(
+      "newMessage",
+      ({ response, targetChatUserId, conversationId, type }) => {
+        console.log(response, targetChatUserId, conversationId, type);
+        console.log(
+          conversationId.chatUser.id === targetChatUserId ? "tue" : "false"
         );
-        if (conversationIndex !== -1) {
-          const updatedUsers = [...prevUsers];
-          updatedUsers[conversationIndex] = {
-            ...updatedUsers[conversationIndex],
-            lastMessage: response.text,
-            lastMessageCreatedAt: new Date(),
-          };
-          return updatedUsers;
-        }
-        return [
-          {
-            id: conversationId.id,
-            // type:"chat",
-            currentUserId: logedInUser.id,
-            chatUserId: conversationId.chatUser.id,
-            chatUser: {
+        setUsers((prevUsers) => {
+          const conversationIndex = prevUsers.findIndex(
+            (item) =>
+              String(item.id) === String(targetChatUserId) && item.type === type
+          );
+          console.log(conversationIndex, "index is here");
+          if (conversationIndex !== -1) {
+            console.log("this blog is running");
+            const updatedUsers = [...prevUsers];
+            updatedUsers[conversationIndex] = {
+              ...updatedUsers[conversationIndex],
+              lastMessage: response.text,
+              lastMessageCreatedAt: new Date(),
+            };
+            return updatedUsers;
+          }
+          if (type === "group") return;
+          return [
+            {
+              id: targetChatUserId,
+              type: type,
               name: conversationId.chatUser.name,
               image: conversationId.chatUser.image,
-              id: conversationId.chatUser?.id,
+              lastMessage: response.text,
+              lastMessageCreatedAt: new Date(),
             },
-            lastMessage: response.text,
-            lastMessageCreatedAt: new Date(),
-          },
-          ...prevUsers,
-        ];
-      });
-    });
-    socket.on("groupCreate", ({ group, members }) => {
-      console.log("group signal gated from server to client", group, members);
+            ...prevUsers,
+          ];
+        });
+      }
+    );
+    socket.on("groupCreate", ({ id, name, image, members }) => {
+      setUsers((prev) => [
+        ...prev,
+        {
+          id: `group-${id}`,
+          type: "group",
+          name,
+          image,
+          lastMessage: "",
+          lastMessageCreatedAt: null,
+        },
+      ]);
       setShowGroupCreate(false);
       setSearchingUser([]);
       setGroupImage({ image: "", file: null });
       setGroupName(null);
     });
+    socket.on("receiveGropMessage", ({ groupId, message }) => {
+      setUsers((prev) =>
+        prev.map((group) =>
+          String(group.id) === String(groupId)
+            ? {
+                ...group,
+                lastMessage: message,
+                lastMessageCreatedAt: new Date(),
+              }
+            : group
+        )
+      );
+    });
   }, [socket, logedInUser]);
-
+  console.log(users);
   const sortedUsers = useMemo(() => {
     if (!users) return;
     return [...users].sort((a, b) => {
@@ -299,8 +342,7 @@ const Sidebar = ({
     localStorage.removeItem("userData");
     navigate("/");
   };
-  console.log(selectedMembers);
-
+  // console.log("selected user", selectedUser);
   return (
     <div className="w-80 bg-[#574CD6] text-white flex flex-col h-screen border-r border-white/10 shadow-2xl relative overflow-hidden">
       {/* create group section */}
@@ -630,17 +672,17 @@ const Sidebar = ({
         {(sortedUsers || []).map((userCoversation) => (
           <div
             key={userCoversation.id}
-            onClick={() => setSelectedUser(userCoversation?.chatUser)}
+            onClick={() => setSelectedUser(userCoversation)}
             className={`flex items-center gap-3 p-3 mb-1 rounded-2xl cursor-pointer user-item-transition group ${
-              selectedUser?.id === userCoversation?.chatUser?.id
-                ? "bg-white text-[#574CD6] shadow-lg"
+              selectedUser?.id === userCoversation?.id
+                ? "bg-white text-[#a69efa] shadow-lg"
                 : "hover:bg-white/10"
             }`}
           >
             <div className="relative shrink-0">
-              {userCoversation?.chatUser?.image ? (
+              {userCoversation?.image ? (
                 <img
-                  src={userCoversation?.chatUser?.image}
+                  src={userCoversation?.image}
                   className={`w-12 h-12 rounded-full border-2 object-cover ${
                     selectedUser?.id === userCoversation?.chatUser?.id
                       ? "border-[#574CD6]/20"
@@ -650,15 +692,15 @@ const Sidebar = ({
               ) : (
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
-                    selectedUser?.id === userCoversation?.chatUser?.id
+                    selectedUser?.id === userCoversation?.id
                       ? "bg-[#574CD6] text-white"
                       : "bg-white/20"
                   }`}
                 >
-                  {getdefaultProfile(userCoversation?.chatUser?.name)}
+                  {getdefaultProfile(userCoversation?.name)}
                 </div>
               )}
-              {onlineUsers.includes(String(userCoversation?.chatUser?.id)) && (
+              {onlineUsers.includes(String(userCoversation?.id)) && (
                 <div className="absolute bottom-0 right-0 w-[15px] h-[15px] rounded-full bg-green-500 flex items-center justify-center border-2 border-[#574CD6]">
                   <FaCheck className="text-[8px] text-gray-900" />
                 </div>
@@ -668,26 +710,28 @@ const Sidebar = ({
             <div className="flex-1 min-w-0">
               <p
                 className={`font-bold truncate ${
-                  selectedUser?.id === userCoversation?.chatUser?.id
+                  selectedUser?.id === userCoversation?.id
                     ? "text-[#574CD6]"
                     : "text-white"
                 }`}
               >
-                {userCoversation?.chatUser?.name}
+                {userCoversation?.name}
               </p>
               <div className="flex justify-between items-center text-xs">
                 <p
                   className={`truncate ${
-                    selectedUser?.id === userCoversation?.chatUser?.id
+                    selectedUser?.id === userCoversation?.id
                       ? "text-[#574CD6]/60"
                       : "text-white/50"
                   }`}
                 >
                   {userCoversation?.lastMessage || "Tap to chat"}
                 </p>
-                <p className="opacity-40 ml-2 shrink-0">
-                  {getDate(userCoversation?.lastMessageCreatedAt)}
-                </p>
+                {userCoversation?.lastMessageCreatedAt && (
+                  <p className="opacity-40 ml-2 shrink-0">
+                    {getDate(userCoversation?.lastMessageCreatedAt)}
+                  </p>
+                )}
               </div>
             </div>
           </div>
