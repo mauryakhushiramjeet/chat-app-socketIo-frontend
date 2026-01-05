@@ -80,7 +80,6 @@ const Sidebar = ({
     }
   };
 
-  // --- Group Helper Functions ---
   const handleGroupImageClick = () => groupFileInputRef.current.click();
 
   const handleGroupFileChange = (e) => {
@@ -107,7 +106,6 @@ const Sidebar = ({
     if (selectedMembers.length < 2)
       return toast.error("Select at least 2 members");
 
-    console.log("Creating group:", { groupName, selectedMembers, groupImage });
 
     const formData = new FormData();
     formData.append("groupName", groupName);
@@ -251,7 +249,6 @@ const Sidebar = ({
       );
     });
   }, [socket, logedInUser]);
-  console.log(users);
   const sortedUsers = useMemo(() => {
     if (!users) return;
     return [...users].sort((a, b) => {

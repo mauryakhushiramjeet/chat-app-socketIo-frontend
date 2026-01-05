@@ -17,6 +17,7 @@ import InputBox from "../component/InputBox";
 import { FaCheck } from "react-icons/fa";
 import { IoCheckmark, IoCheckmarkDone, IoTimeOutline } from "react-icons/io5";
 import EditMessageArea from "../component/EditMessageArea ";
+import { current } from "@reduxjs/toolkit";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -32,6 +33,7 @@ const ChatPage = () => {
   const [editMessageId, setEditMessageId] = useState(null);
   const [editedMessage, setEditedMesage] = useState("");
   const [allReceiverMessages, setAllReceiverMessages] = useState([]);
+  const [privateMessages, setPrivateMessages] = useState([]);
   const [groupMessages, setGroupMessages] = useState([]);
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
@@ -41,7 +43,6 @@ const ChatPage = () => {
   const receiverMessageStore = useSelector((store) => store.getMyMessages);
   const groupMessageStore = useSelector((store) => store.groupMessages);
   const messageRef = useRef(null);
-  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
     if (!logedInUser) return;
@@ -84,7 +85,7 @@ const ChatPage = () => {
       }
     });
     newSocket.on("status:send", ({ clientMessageId }) => {
-      setMessages((prev) =>
+      setPrivateMessages((prev) =>
         prev.map((msg) =>
           msg.clientMessageId === clientMessageId
             ? { ...msg, status: "Send" }
@@ -92,25 +93,27 @@ const ChatPage = () => {
         )
       );
     });
-    newSocket.on("editMessage", ({ messageId, newText }) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId ? { ...msg, text: newText } : msg
-        )
-      );
+    newSocket.on("editMessage", ({ messageId, newText, chatType }) => {
+      if (chatType === "chat") {
+        setPrivateMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, text: newText } : msg
+          )
+        );
+      } else {
+        setGroupMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, text: newText } : msg
+          )
+        );
+      }
+
       setEditMessageId(null);
     });
     newSocket.on("newMessage", ({ clientMessageId, response }) => {
       const currentSelectedUser = selectedUserRef.current;
 
-      console.log(
-        "geted new message",
-        response,
-        "and clientId",
-        clientMessageId
-      );
-
-      setMessages((prev) => {
+      setPrivateMessages((prev) => {
         const updated = prev.map((msg) =>
           msg.clientMessageId === clientMessageId
             ? { ...response, status: "Send" }
@@ -131,73 +134,89 @@ const ChatPage = () => {
 
       if (response?.receiverId === logedInUser?.id && recieverSocketId) {
         if (currentSelectedUser?.id === response?.senderId) {
-          console.log("send signal for read message from client to server");
           newSocket.emit("status:Read", { messageId: response?.id });
         } else {
           newSocket.emit("status:delivered", { messageId: response?.id });
-          console.log("send only deliver signal from client to server");
         }
       }
     });
     newSocket.on("status:Read", ({ messageId }) => {
-      console.log("gated signal for read", messageId);
-      setMessages((prev) =>
+      setPrivateMessages((prev) =>
         prev.map((msg) =>
           msg.id === messageId ? { ...msg, status: "Read" } : msg
         )
       );
     });
     newSocket.on("status:delivered", ({ messageId }) => {
-      console.log("gated delivered signla from server to client");
-      setMessages((prev) =>
+      setPrivateMessages((prev) =>
         prev.map((msg) =>
           msg.id === messageId ? { ...msg, status: "Delivered" } : msg
         )
       );
     });
 
-    newSocket.on("message:deleted", ({ messageId, type }) => {
+    newSocket.on("message:deleted", ({ messageId, type, chatType }) => {
+      const curtrentSelectedUser = selectedUserRef.current;
       if (type === "FOR_EVERYONE") {
-        console.log("deleted for evryOne signale is geted from socket ");
-        setMessages((prev) => {
-          return prev.map((msg) => {
-            if (msg?.id === messageId) {
-              return { ...msg, text: null };
-            }
-            return msg;
+        if (chatType === "group") {
+          setGroupMessages((prev) => {
+            return prev.map((msg) => {
+              if (msg?.id === messageId) {
+                return { ...msg, text: null };
+              }
+              return msg;
+            });
           });
-        });
+        } else {
+          setPrivateMessages((prev) => {
+            return prev.map((msg) => {
+              if (msg?.id === messageId) {
+                return { ...msg, text: null };
+              }
+              return msg;
+            });
+          });
+        }
       }
       if (type === "FOR_ME") {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === messageId
-              ? { ...msg, deletedByMeId: logedInUser?.id }
-              : msg
-          )
-        );
+        if (chatType === "group") {
+          setGroupMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? { ...msg, deletedByMeId: logedInUser?.id }
+                : msg
+            )
+          );
+        } else {
+          setPrivateMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? { ...msg, deletedByMeId: logedInUser?.id }
+                : msg
+            )
+          );
+        }
       }
+
       setIsModelOpen(false);
     });
     newSocket.on("receiveGropMessage", (data) => {
-      console.log("New group message received:", data);
+      setGroupMessages((prevMessages) => {
+        const currentSelectedUser = selectedUserRef.current;
+        if (currentSelectedUser?.id !== data?.groupId) return;
 
-      setMessages((prevMessages) => {
         const exists = prevMessages.some((msg) => msg.id === data.messageId);
         if (exists) return prevMessages;
-
         return [
           ...prevMessages,
           {
             id: data.messageId,
             text: data.message,
-            senderId: data.sender?.id,
-            groupId: data.groupId,
-            sender: data.sender,
-            receiverId: null,
+            groupId: data.groupId.split("-")[1],
             createdAt: new Date(),
-            status: "Send",
-            deletedByMeId: null,
+            sender: data.sender,
+            status: "Delivered",
+            userId: data.sender.id,
           },
         ];
       });
@@ -206,7 +225,13 @@ const ChatPage = () => {
     return () => newSocket.disconnect();
   }, [logedInUser?.id]);
 
-  // console.log(selectedUser);
+  const messages = useMemo(() => {
+    if (selectedUser?.type === "group") {
+      return groupMessages;
+    } else {
+      return privateMessages;
+    }
+  }, [selectedUser?.type, privateMessages, groupMessages]);
   const getdefaultProfile = (name) => {
     if (!name) return;
     const spiltName = name.split(" ");
@@ -217,32 +242,30 @@ const ChatPage = () => {
   useEffect(() => {
     onlineUserRef.current = onlineUsers;
   }, [onlineUsers]);
-  const normalizeGroupMessages = (groupMessages, currentUserId) => {
-    const isGroupMessage = selectedUser?.type === "group" ? true : false;
-    return groupMessages.map((msg) => ({
-      id: isGroupMessage ? `groupMessage-${msg.id}` : msg.id,
-      text: msg.text,
-      senderId: msg.userId,
-      receiverId: null,
-      groupId: msg.groupId,
-      sender: msg.sender,
-      createdAt: msg.createdAt,
-      status: "Send",
-      deletedByMeId: null,
-    }));
-  };
+  // const normalizeGroupMessages = (groupMessages, currentUserId) => {
+  //   const isGroupMessage = selectedUser?.type === "group" ? true : false;
+  //   return groupMessages.map((msg) => ({
+  //     id: isGroupMessage ? `groupMessage-${msg.id}` : msg.id,
+  //     text: msg.text,
+  //     senderId: msg.userId,
+  //     receiverId: null,
+  //     groupId: msg.groupId,
+  //     sender: msg.sender,
+  //     createdAt: msg.createdAt,
+  //     status: "Send",
+  //     deletedByMeId: null,
+  //   }));
+  // };
 
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (!messages || messages.length === 0) return;
-    // console.log(onlineUsers, "online user");
     const unDeliveredMessages = messages.filter(
       (msg) =>
         msg.receiverId === logedInUser.id &&
         msg?.status === "Send" &&
         msg.senderId !== selectedUser?.id
     );
-    // console.log(messages);
     if (
       onlineUsers.includes(String(logedInUser.id)) &&
       unDeliveredMessages.length > 0
@@ -260,7 +283,6 @@ const ChatPage = () => {
         (msg?.status === "Delivered" || msg?.status === "Send") &&
         !msg.readSent
     );
-    console.log(unReadedMessage);
     if (
       unReadedMessage.length > 0 &&
       onlineUsers.includes(String(logedInUser.id))
@@ -326,8 +348,8 @@ const ChatPage = () => {
   useEffect(() => {
     selectedUserRef.current = selectedUser;
     setEditMessageId(null);
+    setMessage([]);
   }, [selectedUser]);
-  // console.log(selectedUser, "at chat");
 
   const handleSendMessage = () => {
     if (message.trim() === "") return;
@@ -339,11 +361,7 @@ const ChatPage = () => {
         message,
         messageSenderId: logedInUser?.id,
       });
-      console.log("group message is send", {
-        groupId: selectedUser?.id,
-        message,
-        messageSenderId: logedInUser?.id,
-      });
+
       setMessage("");
     } else {
       const clientMessageId = crypto.randomUUID();
@@ -355,7 +373,7 @@ const ChatPage = () => {
         text: message,
         type: selectedUser?.type,
       });
-      setMessages((prev) => {
+      setPrivateMessages((prev) => {
         return [
           ...prev,
           {
@@ -387,7 +405,6 @@ const ChatPage = () => {
   }, [logedInUser?.id, dispatch, messages, onlineUsers]);
 
   useEffect(() => {
-    // console.log("receiver message", receiverMessageStore);
     if (
       !receiverMessageStore.isError &&
       !receiverMessageStore.isLoading &&
@@ -398,19 +415,14 @@ const ChatPage = () => {
   }, [receiverMessageStore]);
   useEffect(() => {
     if (
-      !groupMessageStore.isError &&
-      !groupMessageStore.isLoading &&
-      groupMessageStore?.messages
-    ) {
-      const normalized = normalizeGroupMessages(
-        groupMessageStore.messages,
-        logedInUser?.id
-      );
-      setMessages(normalized);
-    }
-  }, [groupMessageStore, logedInUser?.id]);
+      groupMessageStore?.isError ||
+      groupMessageStore?.isLoading ||
+      !groupMessageStore?.messages
+    )
+      return;
 
-  console.log("group messages", messages);
+    setGroupMessages(groupMessageStore?.messages);
+  }, [groupMessageStore]);
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (allReceiverMessages.length === 0 || !allReceiverMessages) return;
@@ -438,22 +450,32 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (messageStore?.messages.length === 0) return;
-    setMessages(messageStore?.messages);
+    setPrivateMessages(messageStore?.messages);
   }, [messageStore]);
 
   useEffect(() => {
     if (messageRef.current)
-      messageRef.current.scrollIntoView({ behavior: "smooth" });
+      messageRef.current.scrollIntoView({ behavior: "auto" });
   }, [messages]);
 
   const handleDeleteForMe = () => {
     setIsModelOpen(false);
+
+    if (!deleteMessageId || !selectedUser) return;
     socket.emit("message:delete", {
       messageId: deleteMessageId,
       senderId: logedInUser?.id,
       receiverId: selectedUser?.id,
       type: "FOR_ME",
+      chatType: selectedUser.type,
     });
+    socket.emit("sidebar:update", {
+      chatType: selectedUser?.type,
+      senderId: logedInUser?.id,
+      receiverId: selectedUser?.id,
+      messageId: deleteMessageId,
+    });
+    // setEditMessageId(null);
   };
 
   const handleDeleteFoEveryOne = () => {
@@ -463,6 +485,7 @@ const ChatPage = () => {
       senderId: logedInUser?.id,
       receiverId: selectedUser?.id,
       type: "FOR_EVERYONE",
+      chatType: selectedUser?.type,
     });
     setDeleteMessageId(null);
   };
@@ -492,14 +515,11 @@ const ChatPage = () => {
       senderId: logedInUser?.id,
       receiverId: selectedUser?.id,
       newText: editedMessage,
+      type: selectedUser?.type,
     });
     setEditMessageId(null);
     setEditMessageId("");
   };
-  const isGroupChat = useMemo(() => {
-    return selectedUser?.type === "group" ? true : false;
-  }, [selectedUser]);
-  console.log(isGroupChat);
 
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden">
@@ -572,10 +592,11 @@ const ChatPage = () => {
 
             {/* Messages Area - Subtle background color change */}
             <div className="flex-1 px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-4">
-              {(messages || []).map((msg, idx) => {
+              {(messages || []).map((msg) => {
                 const isChatMessage =
                   selectedUser?.type === "group"
-                    ? msg.groupId === Number(selectedUser.id.split("-")[1])
+                    ? Number(msg.groupId) ===
+                      Number(selectedUser.id.split("-")[1])
                     : (msg.senderId === logedInUser?.id &&
                         msg.receiverId === selectedUser?.id) ||
                       (msg.senderId === selectedUser?.id &&
@@ -584,7 +605,10 @@ const ChatPage = () => {
                 if (!isChatMessage || msg?.deletedByMeId === logedInUser?.id)
                   return null;
 
-                const isMe = msg.senderId === logedInUser?.id;
+                const isMe =
+                  selectedUser.type === "group"
+                    ? msg.userId === logedInUser?.id
+                    : msg.senderId === logedInUser?.id;
                 const avatarUser =
                   selectedUser?.type === "group"
                     ? msg.sender.image
@@ -594,7 +618,7 @@ const ChatPage = () => {
 
                 return (
                   <div
-                    key={idx}
+                    key={msg.id}
                     className={`flex w-full ${
                       isMe ? "justify-end" : "justify-start"
                     }`}
