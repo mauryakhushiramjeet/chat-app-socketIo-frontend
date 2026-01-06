@@ -102,10 +102,8 @@ const Sidebar = ({
     if (logedInUser) {
       selectedMembers.push(logedInUser?.id);
     }
-    console.log(selectedMembers);
     if (selectedMembers.length < 2)
       return toast.error("Select at least 2 members");
-
 
     const formData = new FormData();
     formData.append("groupName", groupName);
@@ -118,7 +116,7 @@ const Sidebar = ({
     dispatch(createGroup(formData))
       .unwrap()
       .then((res) => {
-        console.log(res.data);
+        // console.log(res);
         if (res.success) {
           toast.success(res.message);
         } else {
@@ -166,10 +164,14 @@ const Sidebar = ({
       ).map((item) => {
         return {
           id: item.type === "group" ? `group-${item.id}` : item.chatUser?.id,
+          mainId: item.id,
           type: item.type,
           name: item.type === "group" ? item.name : item.chatUser?.name,
           image: item.type === "group" ? item.groupImage : item.chatUser?.image,
           lastMessage: item.lastMessage || "Tap to chat",
+          lastMessageId: item.lastMessageId,
+          LastActiveAt:
+            item.type === "group" ? null : item.chatUser?.LastActiveAt,
           lastMessageCreatedAt: item.lastMessageCreatedAt || null,
         };
       });
@@ -177,47 +179,57 @@ const Sidebar = ({
       setUsers(normalizedUsers);
     }
   }, [sidebarChatListStore]);
-
   useEffect(() => {
     if (!socket) return;
     socket.on(
       "newMessage",
-      ({ response, targetChatUserId, conversationId, type }) => {
-        console.log(response, targetChatUserId, conversationId, type);
-        console.log(
-          conversationId.chatUser.id === targetChatUserId ? "tue" : "false"
-        );
+      ({ response, targetChatUserId, conversationId, type, lastMessageId }) => {
+        // console.log(
+        //   "new message",
+        //   response,
+        //   "targetListId",
+        //   targetChatUserId,
+        //   conversationId,
+        //   type,
+        //   lastMessageId
+        // );
+        // console.log("conversationId", conversationId);
         setUsers((prevUsers) => {
           const conversationIndex = prevUsers.findIndex(
             (item) =>
               String(item.id) === String(targetChatUserId) && item.type === type
           );
-          console.log(conversationIndex, "index is here");
+          // console.log(conversationIndex, "index");
           if (conversationIndex !== -1) {
-            console.log("this blog is running");
             const updatedUsers = [...prevUsers];
             updatedUsers[conversationIndex] = {
               ...updatedUsers[conversationIndex],
               lastMessage: response.text,
               lastMessageCreatedAt: new Date(),
+              lastMessageId,
             };
             return updatedUsers;
+          } else {
+            if (type === "group") return;
+            // console.log("new chat created here");
+            return [
+              {
+                id: targetChatUserId,
+                type: type,
+                mainId: conversationId.id,
+                name: conversationId.chatUser.name,
+                image: conversationId.chatUser.image,
+                lastMessage: response.text,
+                lastMessageId,
+                lastMessageCreatedAt: new Date(),
+              },
+              ...prevUsers,
+            ];
           }
-          if (type === "group") return;
-          return [
-            {
-              id: targetChatUserId,
-              type: type,
-              name: conversationId.chatUser.name,
-              image: conversationId.chatUser.image,
-              lastMessage: response.text,
-              lastMessageCreatedAt: new Date(),
-            },
-            ...prevUsers,
-          ];
         });
       }
     );
+
     socket.on("groupCreate", ({ id, name, image, members }) => {
       setUsers((prev) => [
         ...prev,
@@ -248,7 +260,43 @@ const Sidebar = ({
         )
       );
     });
+    socket.on(
+      "sidebar:update",
+      ({
+        lastMessage,
+        sidebarChatId,
+        type,
+        lastMessageId,
+        lastMessageCreatedAt,
+        deleteType,
+      }) => {
+        // console.log(
+        //   "gated sidebar update signal for",
+        //   deleteType,
+        //   "type",
+        //   lastMessage,
+        //   sidebarChatId,
+        //   type,
+        //   lastMessageId,
+        //   lastMessageCreatedAt,
+        //   deleteType
+        // );
+        setUsers((prev) =>
+          prev.map((chatList) =>
+            chatList.mainId === sidebarChatId && chatList.type === type
+              ? {
+                  ...chatList,
+                  lastMessage: lastMessage,
+                  lastMessageCreatedAt,
+                  lastMessageId: lastMessageId,
+                }
+              : chatList
+          )
+        );
+      }
+    );
   }, [socket, logedInUser]);
+  // console.log(users);
   const sortedUsers = useMemo(() => {
     if (!users) return;
     return [...users].sort((a, b) => {
@@ -339,7 +387,7 @@ const Sidebar = ({
     localStorage.removeItem("userData");
     navigate("/");
   };
-  // console.log("selected user", selectedUser);
+
   return (
     <div className="w-80 bg-[#574CD6] text-white flex flex-col h-screen border-r border-white/10 shadow-2xl relative overflow-hidden">
       {/* create group section */}
@@ -619,7 +667,7 @@ const Sidebar = ({
                 <div
                   key={user.id}
                   onClick={() => {
-                    setSelectedUser(user);
+                    setSelectedUser({ ...user, type: "chat" });
                     setSearchText("");
                   }}
                   className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-0"

@@ -69,6 +69,11 @@ const InputBox = ({
             type="text"
             value={message}
             onChange={(e) => handleMessage(e)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSendMessage();
+              }
+            }}
             placeholder="Type a message..."
             rows={0.5}
             // cols={1}
@@ -83,9 +88,11 @@ const InputBox = ({
         </div>
         <button
           onClick={() => handleSendMessage()}
-          disabled={!message}
+          disabled={!message || message.trim() === ""}
           className={`p-[15px] text-white ${
-            message ? "bg-[#574CD6]" : "bg-[#948cee] cursor-default "
+            !message || !message.trim() === ""
+              ? " bg-[#948cee] cursor-default"
+              : "bg-[#574CD6] cursor-pointer "
           }   rounded-full h-fit`}
         >
           <IoSend />

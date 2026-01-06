@@ -14,10 +14,8 @@ import { RiDeleteBinLine } from "react-icons/ri";
 import { HiArrowUturnLeft } from "react-icons/hi2";
 import DeleteModel from "../component/DeleteModel";
 import InputBox from "../component/InputBox";
-import { FaCheck } from "react-icons/fa";
 import { IoCheckmark, IoCheckmarkDone, IoTimeOutline } from "react-icons/io5";
 import EditMessageArea from "../component/EditMessageArea ";
-import { current } from "@reduxjs/toolkit";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -35,8 +33,11 @@ const ChatPage = () => {
   const [allReceiverMessages, setAllReceiverMessages] = useState([]);
   const [privateMessages, setPrivateMessages] = useState([]);
   const [groupMessages, setGroupMessages] = useState([]);
+  const [groupMembers, setGroupMembers] = useState([]);
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
+  const deleteMessageIdRef = React.useRef(null);
+  const messagesRef = useRef([]);
 
   const dispatch = useDispatch();
   const messageStore = useSelector((store) => store.messages);
@@ -157,6 +158,10 @@ const ChatPage = () => {
 
     newSocket.on("message:deleted", ({ messageId, type, chatType }) => {
       const curtrentSelectedUser = selectedUserRef.current;
+      const currentDeletedMessageId = deleteMessageIdRef.current;
+      const currentMessages = messagesRef.current;
+      console.log("before", curtrentSelectedUser.type);
+
       if (type === "FOR_EVERYONE") {
         if (chatType === "group") {
           setGroupMessages((prev) => {
@@ -177,6 +182,7 @@ const ChatPage = () => {
             });
           });
         }
+        setDeleteMessageId(null);
       }
       if (type === "FOR_ME") {
         if (chatType === "group") {
@@ -197,7 +203,21 @@ const ChatPage = () => {
           );
         }
       }
-
+      console.log("before update");
+      if (isLastMessageDeleted(currentDeletedMessageId, currentMessages)) {
+        console.log(
+          "upddate signal is go wright now from cloient to server",
+          currentDeletedMessageId
+        );
+        console.log(curtrentSelectedUser, "selected uset");
+        newSocket.emit("sidebar:update", {
+          chatType: curtrentSelectedUser?.type,
+          senderId: logedInUser?.id,
+          receiverId: curtrentSelectedUser?.id,
+          messageId: currentDeletedMessageId,
+          chatListId: curtrentSelectedUser?.mainId,
+        });
+      }
       setIsModelOpen(false);
     });
     newSocket.on("receiveGropMessage", (data) => {
@@ -232,6 +252,10 @@ const ChatPage = () => {
       return privateMessages;
     }
   }, [selectedUser?.type, privateMessages, groupMessages]);
+  useEffect(() => {
+    messagesRef.current = messages; // messages from useMemo
+  }, [messages]);
+
   const getdefaultProfile = (name) => {
     if (!name) return;
     const spiltName = name.split(" ");
@@ -242,21 +266,7 @@ const ChatPage = () => {
   useEffect(() => {
     onlineUserRef.current = onlineUsers;
   }, [onlineUsers]);
-  // const normalizeGroupMessages = (groupMessages, currentUserId) => {
-  //   const isGroupMessage = selectedUser?.type === "group" ? true : false;
-  //   return groupMessages.map((msg) => ({
-  //     id: isGroupMessage ? `groupMessage-${msg.id}` : msg.id,
-  //     text: msg.text,
-  //     senderId: msg.userId,
-  //     receiverId: null,
-  //     groupId: msg.groupId,
-  //     sender: msg.sender,
-  //     createdAt: msg.createdAt,
-  //     status: "Send",
-  //     deletedByMeId: null,
-  //   }));
-  // };
-
+  console.log(messages, "mesages");
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (!messages || messages.length === 0) return;
@@ -348,7 +358,8 @@ const ChatPage = () => {
   useEffect(() => {
     selectedUserRef.current = selectedUser;
     setEditMessageId(null);
-    setMessage([]);
+    setMessage("");
+    setGroupMembers([]);
   }, [selectedUser]);
 
   const handleSendMessage = () => {
@@ -420,8 +431,9 @@ const ChatPage = () => {
       !groupMessageStore?.messages
     )
       return;
-
+    console.log(groupMessageStore, "groupit iskljh");
     setGroupMessages(groupMessageStore?.messages);
+    setGroupMembers(groupMessageStore?.members);
   }, [groupMessageStore]);
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
@@ -437,11 +449,12 @@ const ChatPage = () => {
     const groupId = id.split("-")[1];
     dispatch(getGroupMessages(groupId));
   }, [selectedUser]);
+  console.log(selectedUserRef.current);
   const getDate = (date) => {
     const now = new Date(date);
     const hours24 = now.getHours();
     const minutes = String(now.getMinutes()).padStart(2, "0");
-
+    const day = now.getDate().toString();
     const period = hours24 >= 12 ? "PM" : "AM";
     const hours12 = hours24 % 12 || 12;
 
@@ -460,6 +473,7 @@ const ChatPage = () => {
 
   const handleDeleteForMe = () => {
     setIsModelOpen(false);
+    console.log(deleteMessageId);
 
     if (!deleteMessageId || !selectedUser) return;
     socket.emit("message:delete", {
@@ -469,13 +483,26 @@ const ChatPage = () => {
       type: "FOR_ME",
       chatType: selectedUser.type,
     });
-    socket.emit("sidebar:update", {
-      chatType: selectedUser?.type,
-      senderId: logedInUser?.id,
-      receiverId: selectedUser?.id,
-      messageId: deleteMessageId,
-    });
-    // setEditMessageId(null);
+  };
+  useEffect(() => {
+    deleteMessageIdRef.current = deleteMessageId;
+  }, [deleteMessageId]);
+  const isLastMessageDeleted = (messageId, currentMessages) => {
+    console.log(currentMessages, "message sis here");
+
+    if (!messageId || !currentMessages || currentMessages.length === 0)
+      return false;
+    const deleteMessage = currentMessages.find((msg) => msg.id === messageId);
+    const messages = currentMessages.filter(
+      (msg) => msg.deletedByMeId !== deleteMessage?.senderId
+    );
+
+    console.log("dbdhj", messages);
+    const lastMessage = messages[messages.length - 1];
+    console.log(deleteMessage, "deleted message");
+    console.log(lastMessage, "last message this is");
+    if (!deleteMessage || !lastMessage) return false;
+    return deleteMessage.id === lastMessage.id;
   };
 
   const handleDeleteFoEveryOne = () => {
@@ -487,7 +514,8 @@ const ChatPage = () => {
       type: "FOR_EVERYONE",
       chatType: selectedUser?.type,
     });
-    setDeleteMessageId(null);
+
+    // setDeleteMessageId(null);
   };
   const MessageStatus = ({ status }) => {
     switch (status) {
@@ -520,7 +548,7 @@ const ChatPage = () => {
     setEditMessageId(null);
     setEditMessageId("");
   };
-
+  // console.log(selectedUser);
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden">
       {/* Sidebar - Added a subtle border-right */}
@@ -583,6 +611,15 @@ const ChatPage = () => {
                       </p>
                     ) : null}
                   </div>
+                  {selectedUser.type === "group" && (
+                    <div className="flex gap-1 text-[#574CD6] text-sm mt-1">
+                      {groupMembers.map((member) => (
+                        <p key={member?.id}>
+                          {member.name} {","}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
@@ -609,12 +646,17 @@ const ChatPage = () => {
                   selectedUser.type === "group"
                     ? msg.userId === logedInUser?.id
                     : msg.senderId === logedInUser?.id;
-                const avatarUser =
-                  selectedUser?.type === "group"
-                    ? msg.sender.image
-                    : selectedUser?.image && selectedUser.image.trim() !== ""
-                    ? selectedUser?.image
-                    : "";
+                const isGroup = selectedUser?.type === "group";
+
+                const avatarImage = isGroup
+                  ? msg?.sender?.image
+                  : selectedUser?.image;
+
+                const avatarName = isGroup
+                  ? msg?.sender?.name
+                  : selectedUser?.name;
+
+                const hasImage = avatarImage && avatarImage.trim() !== "";
 
                 return (
                   <div
@@ -671,16 +713,15 @@ const ChatPage = () => {
                           className={`${!isMe ? "block shrink-0" : "hidden"}`}
                         >
                           {" "}
-                          {selectedUser?.image &&
-                          selectedUser.image.trim() !== "" ? (
+                          {hasImage ? (
                             <img
-                              src={avatarUser}
+                              src={avatarImage}
                               alt="User"
                               className="w-6 h-6 rounded-full object-cover ring-2 ring-gray-50"
                             />
                           ) : (
                             <div className="w-6 h-6 rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
-                              {getdefaultProfile(selectedUser?.name)}
+                              {getdefaultProfile(avatarName)}
                             </div>
                           )}
                         </div>
