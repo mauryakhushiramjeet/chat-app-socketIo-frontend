@@ -18,7 +18,7 @@ const getGroupMessagesSlice = createSlice({
         state.isLoading = true;
       })
       .addCase(getGroupMessages.fulfilled, (state, action) => {
-        console.log(action.payload, "this i action .payload");
+        // console.log(action.payload, "this i action .payload");
         state.isError = false;
         state.isLoading = false;
         state.messages = action.payload.messages;

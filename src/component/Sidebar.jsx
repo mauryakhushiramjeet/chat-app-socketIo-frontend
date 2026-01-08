@@ -37,6 +37,7 @@ const Sidebar = ({
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [groupImage, setGroupImage] = useState({ image: "", file: null });
   const groupFileInputRef = useRef(null);
+  const usersRef = useRef([]);
 
   const [initialProfile, setInitialProfile] = useState({
     name: logedInUser?.name,
@@ -159,6 +160,10 @@ const Sidebar = ({
 
   useEffect(() => {
     if (!sidebarChatListStore?.isError && !sidebarChatListStore?.isLoading) {
+      // console.log(
+      //   sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions,
+      //   "print group convrsation"
+      // );
       const normalizedUsers = (
         sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions || []
       ).map((item) => {
@@ -180,20 +185,26 @@ const Sidebar = ({
     }
   }, [sidebarChatListStore]);
   useEffect(() => {
+    usersRef.current = users;
+  }, [users]);
+  useEffect(() => {
     if (!socket) return;
+
     socket.on(
       "newMessage",
       ({ response, targetChatUserId, conversationId, type, lastMessageId }) => {
-        // console.log(
-        //   "new message",
-        //   response,
-        //   "targetListId",
-        //   targetChatUserId,
-        //   conversationId,
-        //   type,
-        //   lastMessageId
-        // );
+        console.log("mnasbjhga");
+        console.log(
+          "new message",
+          response,
+          "targetListId",
+          targetChatUserId,
+          conversationId,
+          type,
+          lastMessageId
+        );
         // console.log("conversationId", conversationId);
+        console.log(lastMessageId, "lastmessageId");
         setUsers((prevUsers) => {
           const conversationIndex = prevUsers.findIndex(
             (item) =>
@@ -247,12 +258,19 @@ const Sidebar = ({
       setGroupImage({ image: "", file: null });
       setGroupName(null);
     });
-    socket.on("receiveGropMessage", ({ groupId, message }) => {
+    socket.on("receiveGropMessage", ({ groupId, message, lastMessageId }) => {
+      console.log(
+        "new group message is receive",
+        message,
+        "message id is",
+        lastMessageId
+      );
       setUsers((prev) =>
         prev.map((group) =>
           String(group.id) === String(groupId)
             ? {
                 ...group,
+                lastMessageId: lastMessageId,
                 lastMessage: message,
                 lastMessageCreatedAt: new Date(),
               }
@@ -262,14 +280,7 @@ const Sidebar = ({
     });
     socket.on(
       "sidebar:update",
-      ({
-        lastMessage,
-        sidebarChatId,
-        type,
-        lastMessageId,
-        lastMessageCreatedAt,
-        deleteType,
-      }) => {
+      ({ lastMessage, sidebarChatId, type, lastMessageId, deleteType }) => {
         // console.log(
         //   "gated sidebar update signal for",
         //   deleteType,
@@ -281,13 +292,27 @@ const Sidebar = ({
         //   lastMessageCreatedAt,
         //   deleteType
         // );
+        if (deleteType === "For_Everypone") {
+          const users = usersRef.current;
+          console.log(users);
+          const lastmessageList = users.find(
+            (msg) => msg?.lastMessageId === lastMessageId
+          );
+          console.log(
+            "lastmessages list",
+            lastmessageList,
+            "and the messges deleted id is:",
+            lastMessageId
+          );
+          if (!lastmessageList) return;
+        }
         setUsers((prev) =>
           prev.map((chatList) =>
             chatList.mainId === sidebarChatId && chatList.type === type
               ? {
                   ...chatList,
                   lastMessage: lastMessage,
-                  lastMessageCreatedAt,
+                  lastMessageCreatedAt: new Date(),
                   lastMessageId: lastMessageId,
                 }
               : chatList

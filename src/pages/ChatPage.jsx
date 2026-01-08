@@ -157,6 +157,7 @@ const ChatPage = () => {
     });
 
     newSocket.on("message:deleted", ({ messageId, type, chatType }) => {
+      console.log("get delete sinal at frontend");
       const curtrentSelectedUser = selectedUserRef.current;
       const currentDeletedMessageId = deleteMessageIdRef.current;
       const currentMessages = messagesRef.current;
@@ -182,7 +183,7 @@ const ChatPage = () => {
             });
           });
         }
-        setDeleteMessageId(null);
+        // setDeleteMessageId(null);
       }
       if (type === "FOR_ME") {
         if (chatType === "group") {
@@ -205,10 +206,7 @@ const ChatPage = () => {
       }
       console.log("before update");
       if (isLastMessageDeleted(currentDeletedMessageId, currentMessages)) {
-        console.log(
-          "upddate signal is go wright now from cloient to server",
-          currentDeletedMessageId
-        );
+        console.log("upddate signal client-server", currentDeletedMessageId);
         console.log(curtrentSelectedUser, "selected uset");
         newSocket.emit("sidebar:update", {
           chatType: curtrentSelectedUser?.type,
@@ -225,8 +223,11 @@ const ChatPage = () => {
         const currentSelectedUser = selectedUserRef.current;
         if (currentSelectedUser?.id !== data?.groupId) return;
 
-        const exists = prevMessages.some((msg) => msg.id === data.messageId);
+        const exists = prevMessages.some(
+          (msg) => msg.id === data.lastMessageId
+        );
         if (exists) return prevMessages;
+       
         return [
           ...prevMessages,
           {
@@ -244,7 +245,7 @@ const ChatPage = () => {
 
     return () => newSocket.disconnect();
   }, [logedInUser?.id]);
-
+  console.log();
   const messages = useMemo(() => {
     if (selectedUser?.type === "group") {
       return groupMessages;
@@ -266,7 +267,7 @@ const ChatPage = () => {
   useEffect(() => {
     onlineUserRef.current = onlineUsers;
   }, [onlineUsers]);
-  console.log(messages, "mesages");
+  // console.log(messages, "mesages");
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (!messages || messages.length === 0) return;
@@ -431,7 +432,7 @@ const ChatPage = () => {
       !groupMessageStore?.messages
     )
       return;
-    console.log(groupMessageStore, "groupit iskljh");
+    // console.log(groupMessageStore, "groupit iskljh");
     setGroupMessages(groupMessageStore?.messages);
     setGroupMembers(groupMessageStore?.members);
   }, [groupMessageStore]);
@@ -449,7 +450,7 @@ const ChatPage = () => {
     const groupId = id.split("-")[1];
     dispatch(getGroupMessages(groupId));
   }, [selectedUser]);
-  console.log(selectedUserRef.current);
+  // console.log(selectedUserRef.current);
   const getDate = (date) => {
     const now = new Date(date);
     const hours24 = now.getHours();
@@ -470,9 +471,12 @@ const ChatPage = () => {
     if (messageRef.current)
       messageRef.current.scrollIntoView({ behavior: "auto" });
   }, [messages]);
-
+useEffect(() => {
+    deleteMessageIdRef.current = deleteMessageId;
+  }, [deleteMessageId]);
   const handleDeleteForMe = () => {
     setIsModelOpen(false);
+   const deleteMessageId=deleteMessageIdRef.current
     console.log(deleteMessageId);
 
     if (!deleteMessageId || !selectedUser) return;
@@ -483,25 +487,30 @@ const ChatPage = () => {
       type: "FOR_ME",
       chatType: selectedUser.type,
     });
+    console.log("delete function is call");
   };
-  useEffect(() => {
-    deleteMessageIdRef.current = deleteMessageId;
-  }, [deleteMessageId]);
+  
   const isLastMessageDeleted = (messageId, currentMessages) => {
     console.log(currentMessages, "message sis here");
-
+    const selectedUser = selectedUserRef?.current;
+    console.log("selectedUser", selectedUser);
     if (!messageId || !currentMessages || currentMessages.length === 0)
       return false;
     const deleteMessage = currentMessages.find((msg) => msg.id === messageId);
     const messages = currentMessages.filter(
-      (msg) => msg.deletedByMeId !== deleteMessage?.senderId
+      (msg) =>
+        msg.deletedByMeId !==
+        (selectedUser?.type === "chat"
+          ? deleteMessage?.senderId
+          : deleteMessage?.userId)
     );
 
-    console.log("dbdhj", messages);
     const lastMessage = messages[messages.length - 1];
-    console.log(deleteMessage, "deleted message");
-    console.log(lastMessage, "last message this is");
-    if (!deleteMessage || !lastMessage) return false;
+    // console.log(deleteMessage, "deleted message", messages, "filterMessages");
+    // console.log(lastMessage, "last message this is");
+    if (!deleteMessage || !lastMessage) {
+      return false;
+    }
     return deleteMessage.id === lastMessage.id;
   };
 
@@ -615,7 +624,10 @@ const ChatPage = () => {
                     <div className="flex gap-1 text-[#574CD6] text-sm mt-1">
                       {groupMembers.map((member) => (
                         <p key={member?.id}>
-                          {member.name} {","}
+                          {member.name}{" "}
+                          {member === groupMembers[groupMembers.length - 1]
+                            ? ""
+                            : ","}
                         </p>
                       ))}
                     </div>
