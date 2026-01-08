@@ -607,7 +607,7 @@ useEffect(() => {
                     <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white"></div>
                   )}
                 </div>
-                <div>
+                {/* <div>
                   <div className="font-bold text-gray-800 leading-tight">
                     {selectedUser.name}
                   </div>
@@ -632,7 +632,64 @@ useEffect(() => {
                       ))}
                     </div>
                   )}
-                </div>
+                </div> */}
+                <div>
+  {/* 1. User/Group Name */}
+  <div className="font-bold text-gray-800 text-base leading-tight">
+    {selectedUser.name}
+  </div>
+
+  {/* 2. Secondary Status Line */}
+  <div className="flex items-center gap-1.5 h-4">
+    {selectedUser.type === "group" ? (
+      // GROUP STATUS
+      <div className="flex items-center text-[11px] font-medium text-gray-500">
+        <span>{groupMembers.length} members</span>
+        <span className="mx-1">•</span>
+        <span className="text-green-600">
+          {groupMembers.filter(m => onlineUsers.includes(String(m.id))).length} online
+        </span>
+      </div>
+    ) : (
+      // INDIVIDUAL STATUS
+      onlineUsers.includes(String(selectedUser?.id)) ? (
+        <div className="flex items-center gap-1">
+          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+          <span className="text-[11px] text-green-600 font-semibold uppercase tracking-wider">Online</span>
+        </div>
+      ) : selectedUser?.LastActiveAt ? (
+        <span className="text-[#574CD6] text-[11px]">
+          Last seen {getDate(selectedUser?.LastActiveAt)}
+        </span>
+      ) : (
+        <span className="text-gray-400 text-[11px]">Offline</span>
+      )
+    )}
+  </div>
+
+  {/* 3. Group Members Detail (Only for groups) */}
+  {selectedUser.type === "group" && (
+    <div className="flex flex-wrap gap-x-1 gap-y-0 text-[11px] mt-1 max-w-[400px]">
+      {groupMembers.map((member, index) => {
+        const isMemberOnline = onlineUsers.includes(String(member?.id));
+        return (
+          <div key={member?.id} className="flex items-center">
+            <span
+              className={`transition-colors duration-300 ${
+                isMemberOnline ? "text-green-600 font-semibold" : "text-gray-400"
+              }`}
+            >
+              {member.name}
+            </span>
+            {index < groupMembers.length - 1 && (
+              <span className="text-gray-300 ml-1">,</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
               </div>
               <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
                 <HiOutlineDotsHorizontal size={20} />
