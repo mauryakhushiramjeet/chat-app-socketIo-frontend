@@ -6,6 +6,7 @@ import {
   getAllReceiverMesages,
   getAllMessages,
   getGroupMessages,
+  sendMessage,
 } from "../store/actions/messageActions";
 import Sidebar from "../component/Sidebar";
 import { LuSmilePlus } from "react-icons/lu";
@@ -34,6 +35,8 @@ const ChatPage = () => {
   const [privateMessages, setPrivateMessages] = useState([]);
   const [groupMessages, setGroupMessages] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
   const deleteMessageIdRef = React.useRef(null);
@@ -111,9 +114,9 @@ const ChatPage = () => {
 
       setEditMessageId(null);
     });
-    newSocket.on("newMessage", ({ clientMessageId, response }) => {
+    newSocket.on("newMessage", ({ clientMessageId, response, files }) => {
       const currentSelectedUser = selectedUserRef.current;
-
+      console.log(files);
       setPrivateMessages((prev) => {
         const updated = prev.map((msg) =>
           msg.clientMessageId === clientMessageId
@@ -227,7 +230,7 @@ const ChatPage = () => {
           (msg) => msg.id === data.lastMessageId
         );
         if (exists) return prevMessages;
-       
+
         return [
           ...prevMessages,
           {
@@ -377,7 +380,6 @@ const ChatPage = () => {
       setMessage("");
     } else {
       const clientMessageId = crypto.randomUUID();
-
       socket.emit("sendMessage", {
         clientMessageId,
         senderId: logedInUser?.id,
@@ -401,7 +403,30 @@ const ChatPage = () => {
           },
         ];
       });
+      // clientMessageId, text, senderId, receiverId, type
+      const formData = new FormData();
+      formData.append("clientMessageId", clientMessageId);
+      formData.append("senderId", logedInUser?.id);
 
+      formData.append("text", message);
+
+      formData.append("receiverId", selectedUser?.id);
+      formData.append("type", selectedUser?.type);
+      for (let i = 0; i < selectedFiles.length; i++) {
+        formData.append("file", selectedFiles[i]); // append each file separately
+      }
+
+      dispatch(sendMessage(formData))
+        .unwrap()
+        .then((res) => {
+          console.log(res);
+          if (res.success) {
+            console.log(res, "after success");
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
       setMessage("");
       socket.emit("stopTyping", {
         senderId: logedInUser?.id,
@@ -471,12 +496,12 @@ const ChatPage = () => {
     if (messageRef.current)
       messageRef.current.scrollIntoView({ behavior: "auto" });
   }, [messages]);
-useEffect(() => {
+  useEffect(() => {
     deleteMessageIdRef.current = deleteMessageId;
   }, [deleteMessageId]);
   const handleDeleteForMe = () => {
     setIsModelOpen(false);
-   const deleteMessageId=deleteMessageIdRef.current
+    const deleteMessageId = deleteMessageIdRef.current;
     console.log(deleteMessageId);
 
     if (!deleteMessageId || !selectedUser) return;
@@ -489,7 +514,7 @@ useEffect(() => {
     });
     console.log("delete function is call");
   };
-  
+
   const isLastMessageDeleted = (messageId, currentMessages) => {
     console.log(currentMessages, "message sis here");
     const selectedUser = selectedUserRef?.current;
@@ -559,7 +584,7 @@ useEffect(() => {
   };
   // console.log(selectedUser);
   return (
-    <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito">
       {/* Sidebar - Added a subtle border-right */}
       <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white">
         <Sidebar
@@ -607,89 +632,75 @@ useEffect(() => {
                     <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white"></div>
                   )}
                 </div>
-                {/* <div>
-                  <div className="font-bold text-gray-800 leading-tight">
+
+                <div>
+                  {/* 1. User/Group Name */}
+                  <div className="font-bold text-gray-800 text-base leading-tight">
                     {selectedUser.name}
                   </div>
-                  <div className="text-[11px] text-green-600 font-medium">
-                    {onlineUsers.includes(String(selectedUser?.id)) ? (
-                      ""
-                    ) : selectedUser?.LastActiveAt ? (
-                      <p className="text-[#574CD6] text-xs">
-                        Last seen {getDate(selectedUser?.LastActiveAt)}
-                      </p>
-                    ) : null}
-                  </div>
-                  {selectedUser.type === "group" && (
-                    <div className="flex gap-1 text-[#574CD6] text-sm mt-1">
-                      {groupMembers.map((member) => (
-                        <p key={member?.id}>
-                          {member.name}{" "}
-                          {member === groupMembers[groupMembers.length - 1]
-                            ? ""
-                            : ","}
-                        </p>
-                      ))}
+
+                  {/* 2. Secondary Status Line */}
+                  <div className="flex gap-1 items-center text-sm">
+                    <div className="flex items-center gap-1.5 ">
+                      {selectedUser.type === "group" ? (
+                        <div className="flex items-center  font-medium text-gray-500">
+                          <span>{groupMembers.length} members</span>
+                          <span className="mx-1">•</span>
+                          <span className="text-[#574CD6]">
+                            {
+                              groupMembers.filter((m) =>
+                                onlineUsers.includes(String(m.id))
+                              ).length
+                            }{" "}
+                            online
+                          </span>
+                        </div>
+                      ) : // INDIVIDUAL STATUS
+                      onlineUsers.includes(String(selectedUser?.id)) ? (
+                        <div className="flex items-center gap-1">
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                          <span className="text-[11px] text-green-600 font-semibold uppercase tracking-wider">
+                            Online
+                          </span>
+                        </div>
+                      ) : selectedUser?.LastActiveAt ? (
+                        <span className="text-[#574CD6] ">
+                          Last seen {getDate(selectedUser?.LastActiveAt)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">Offline</span>
+                      )}
                     </div>
-                  )}
-                </div> */}
-                <div>
-  {/* 1. User/Group Name */}
-  <div className="font-bold text-gray-800 text-base leading-tight">
-    {selectedUser.name}
-  </div>
+                    {selectedUser.type === "group" && (
+                      <div className="flex ml-2 gap-x-1 text-sm max-w-[400px]">
+                        <span className="truncate whitespace-nowrap">
+                          {groupMembers.map((member, index) => {
+                            const isMemberOnline = onlineUsers.includes(
+                              String(member?.id)
+                            );
 
-  {/* 2. Secondary Status Line */}
-  <div className="flex items-center gap-1.5 h-4">
-    {selectedUser.type === "group" ? (
-      // GROUP STATUS
-      <div className="flex items-center text-[11px] font-medium text-gray-500">
-        <span>{groupMembers.length} members</span>
-        <span className="mx-1">•</span>
-        <span className="text-green-600">
-          {groupMembers.filter(m => onlineUsers.includes(String(m.id))).length} online
-        </span>
-      </div>
-    ) : (
-      // INDIVIDUAL STATUS
-      onlineUsers.includes(String(selectedUser?.id)) ? (
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-          <span className="text-[11px] text-green-600 font-semibold uppercase tracking-wider">Online</span>
-        </div>
-      ) : selectedUser?.LastActiveAt ? (
-        <span className="text-[#574CD6] text-[11px]">
-          Last seen {getDate(selectedUser?.LastActiveAt)}
-        </span>
-      ) : (
-        <span className="text-gray-400 text-[11px]">Offline</span>
-      )
-    )}
-  </div>
+                            return (
+                              <span key={member?.id}>
+                                <span
+                                  className={`transition-colors duration-300 ${
+                                    isMemberOnline
+                                      ? "text-[#574CD6] font-semibold"
+                                      : "text-gray-400"
+                                  }`}
+                                >
+                                  {member.name}
+                                </span>
+                                {index < groupMembers.length - 1 && ", "}
+                              </span>
+                            );
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-  {/* 3. Group Members Detail (Only for groups) */}
-  {selectedUser.type === "group" && (
-    <div className="flex flex-wrap gap-x-1 gap-y-0 text-[11px] mt-1 max-w-[400px]">
-      {groupMembers.map((member, index) => {
-        const isMemberOnline = onlineUsers.includes(String(member?.id));
-        return (
-          <div key={member?.id} className="flex items-center">
-            <span
-              className={`transition-colors duration-300 ${
-                isMemberOnline ? "text-green-600 font-semibold" : "text-gray-400"
-              }`}
-            >
-              {member.name}
-            </span>
-            {index < groupMembers.length - 1 && (
-              <span className="text-gray-300 ml-1">,</span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  )}
-</div>
+                  {/* 3. Group Members Detail (Only for groups) */}
+                </div>
               </div>
               <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
                 <HiOutlineDotsHorizontal size={20} />
@@ -697,7 +708,7 @@ useEffect(() => {
             </div>
 
             {/* Messages Area - Subtle background color change */}
-            <div className="flex-1 px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-4">
+            <div className="flex-1 px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-7">
               {(messages || []).map((msg) => {
                 const isChatMessage =
                   selectedUser?.type === "group"
@@ -735,44 +746,10 @@ useEffect(() => {
                     }`}
                   >
                     <div
-                      className={`relative group w-full max-w-[400px]  ${
+                      className={` w-full max-w-[400px]  ${
                         isMe ? "justify-end" : "justify-start"
                       }`}
                     >
-                      <div
-                        className={`absolute ${
-                          msg.text === null || msg.id === editMessageId
-                            ? "hidden"
-                            : "block"
-                        } -top-8 ${
-                          isMe ? "right-0" : "left-0"
-                        } opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center bg-white border border-gray-100 rounded-lg shadow-xl px-1 py-0.5 z-10`}
-                      >
-                        <button className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors">
-                          <LuSmilePlus size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleMessageEdit(msg?.text, msg?.id)}
-                          className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors"
-                        >
-                          <HiOutlinePencil size={16} />
-                        </button>
-                        {isMe && (
-                          <button
-                            onClick={() => {
-                              setIsModelOpen(true);
-                              setDeleteMessageId(msg?.id);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-red-500 rounded-md transition-colors"
-                          >
-                            <RiDeleteBinLine size={16} />
-                          </button>
-                        )}
-                        <button className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors">
-                          <HiArrowUturnLeft size={16} />
-                        </button>
-                      </div>
-
                       <div
                         className={`flex gap-1 w-full ${
                           isMe ? "justify-end" : "justify-start"
@@ -806,7 +783,7 @@ useEffect(() => {
                           />
                         ) : (
                           <div
-                            className={`px-4 py-2 shadow-sm text-sm leading-relaxed w-fit max-w-[400px] break-words ${
+                            className={`px-4 relative group  py-2 shadow-sm text-sm leading-relaxed w-fit max-w-[400px] break-words ${
                               isMe
                                 ? `${
                                     msg.text === null
@@ -816,6 +793,41 @@ useEffect(() => {
                                 : "bg-gray-200 text-gray-800 rounded-2xl rounded-tl-none border border-gray-100"
                             }`}
                           >
+                            <div
+                              className={`absolute ${
+                                msg.text === null || msg.id === editMessageId
+                                  ? "hidden"
+                                  : "block"
+                              } -top-8 ${
+                                isMe ? "right-0" : "left-0"
+                              } opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center bg-white border border-gray-100 rounded-lg shadow-xl px-1 py-0.5 z-10`}
+                            >
+                              <button className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors">
+                                <LuSmilePlus size={16} />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleMessageEdit(msg?.text, msg?.id)
+                                }
+                                className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors"
+                              >
+                                <HiOutlinePencil size={16} />
+                              </button>
+                              {isMe && (
+                                <button
+                                  onClick={() => {
+                                    setIsModelOpen(true);
+                                    setDeleteMessageId(msg?.id);
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-red-500 rounded-md transition-colors"
+                                >
+                                  <RiDeleteBinLine size={16} />
+                                </button>
+                              )}
+                              <button className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors">
+                                <HiArrowUturnLeft size={16} />
+                              </button>
+                            </div>
                             <div
                               className={
                                 msg.text === null
@@ -856,7 +868,7 @@ useEffect(() => {
             </div>
 
             {/* Input Wrapper - Clean Padding */}
-            <div className="px-12 py-4 bg-white border-t border-gray-100">
+            <div className="px-12 py-4">
               <InputBox
                 typingUserId={typingUserId}
                 selectedUser={selectedUser}
@@ -866,6 +878,8 @@ useEffect(() => {
                 handleSendMessage={handleSendMessage}
                 setShowImozi={setShowImozi}
                 showImozi={showImozi}
+                selectedFiles={selectedFiles}
+                setSelectedFiles
               />
             </div>
           </>

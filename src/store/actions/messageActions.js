@@ -33,6 +33,18 @@ export const getAllReceiverMesages = createAsyncThunk(
     }
   }
 );
+export const sendMessage = createAsyncThunk(
+  "post/message",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post("/addMessage", formData);
+      return response.data;
+    } catch (error) {
+      console.log("AXIOS ERROR:", error.response);
+      return rejectWithValue(error?.response?.data?.message);
+    }
+  }
+);
 
 export const getGroupMessages = createAsyncThunk(
   "get/groupMessages",
