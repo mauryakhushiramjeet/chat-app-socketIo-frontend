@@ -21,7 +21,7 @@ const InputBox = ({
   setShowImozi,
   showImozi,
   selectedFiles,
-   setSelectedFiles
+  setSelectedFiles,
 }) => {
   const imoziPickerRef = useRef(null);
   const textRef = useRef(null);
@@ -141,6 +141,7 @@ const InputBox = ({
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSendMessage();
+                textRef.current.style.height = "40px";
               }
             }}
             placeholder="Type a message..."
@@ -207,7 +208,7 @@ const InputBox = ({
               title="Send"
               type="file"
               onClick={() => handleSendMessage()}
-              disabled={!message || message.trim() === ""}
+              disabled={message.trim() === "" && selectedFiles.length === 0}
               accept="image/*"
               className=" text-gray-400 cursor-pointer rounded-md transition-colors hover:text-[#554AD1]"
             >

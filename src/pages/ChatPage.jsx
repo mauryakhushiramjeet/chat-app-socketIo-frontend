@@ -7,6 +7,7 @@ import {
   getAllMessages,
   getGroupMessages,
   sendMessage,
+  sendGroupMessage,
 } from "../store/actions/messageActions";
 import Sidebar from "../component/Sidebar";
 import { LuSmilePlus } from "react-icons/lu";
@@ -17,6 +18,7 @@ import DeleteModel from "../component/DeleteModel";
 import InputBox from "../component/InputBox";
 import { IoCheckmark, IoCheckmarkDone, IoTimeOutline } from "react-icons/io5";
 import EditMessageArea from "../component/EditMessageArea ";
+import FilesView from "../component/FilesView";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -115,18 +117,38 @@ const ChatPage = () => {
       setEditMessageId(null);
     });
     newSocket.on("newMessage", ({ clientMessageId, response, files }) => {
+      setSelectedFiles([]);
+      console.log(
+        "new message is come",
+        clientMessageId,
+        response,
+        files,
+        "file"
+      );
       const currentSelectedUser = selectedUserRef.current;
       console.log(files);
       setPrivateMessages((prev) => {
         const updated = prev.map((msg) =>
           msg.clientMessageId === clientMessageId
-            ? { ...response, status: "Send" }
+            ? {
+                ...response,
+                status: "Send",
+                file: files.length > 0 ? files : [],
+              }
             : msg
         );
 
         const exist = updated.some((m) => m.id === response.id);
+        console.log(exist, "exists");
         if (!exist) {
-          return [...updated, { ...response, status: "Send" }];
+          return [
+            ...updated,
+            {
+              ...response,
+              status: "Send",
+              file: files.length > 0 ? files : [],
+            },
+          ];
         }
 
         return updated;
@@ -171,7 +193,7 @@ const ChatPage = () => {
           setGroupMessages((prev) => {
             return prev.map((msg) => {
               if (msg?.id === messageId) {
-                return { ...msg, text: null };
+                return { ...msg, text: null, deletedForAll: true };
               }
               return msg;
             });
@@ -180,7 +202,7 @@ const ChatPage = () => {
           setPrivateMessages((prev) => {
             return prev.map((msg) => {
               if (msg?.id === messageId) {
-                return { ...msg, text: null };
+                return { ...msg, text: null, deletedForAll: true };
               }
               return msg;
             });
@@ -222,6 +244,7 @@ const ChatPage = () => {
       setIsModelOpen(false);
     });
     newSocket.on("receiveGropMessage", (data) => {
+      console.log(data, "group messages ");
       setGroupMessages((prevMessages) => {
         const currentSelectedUser = selectedUserRef.current;
         if (currentSelectedUser?.id !== data?.groupId) return;
@@ -241,6 +264,7 @@ const ChatPage = () => {
             sender: data.sender,
             status: "Delivered",
             userId: data.sender.id,
+            file: data?.file.length > 0 ? data?.file : null,
           },
         ];
       });
@@ -294,8 +318,7 @@ const ChatPage = () => {
       (msg) =>
         msg?.receiverId === logedInUser?.id &&
         msg?.senderId === selectedUser?.id &&
-        (msg?.status === "Delivered" || msg?.status === "Send") &&
-        !msg.readSent
+        (msg?.status === "Delivered" || msg?.status === "Send")
     );
     if (
       unReadedMessage.length > 0 &&
@@ -303,7 +326,7 @@ const ChatPage = () => {
     ) {
       unReadedMessage.forEach((msg) => {
         socket.emit("status:Read", { messageId: msg?.id });
-        msg.readSent = true;
+        // msg.readSent = true;
       });
     }
   }, [
@@ -367,42 +390,58 @@ const ChatPage = () => {
   }, [selectedUser]);
 
   const handleSendMessage = () => {
-    if (message.trim() === "") return;
+    console.log("click message button ");
+    if (message.trim() === "" && selectedFiles.length === 0) return;
+    console.log("after");
     if (selectedUser?.type === "group") {
       const id = selectedUser?.id;
       const groupId = id.split("-")[1];
-      socket.emit("sendGroupMessage", {
-        groupId: groupId,
-        message,
-        messageSenderId: logedInUser?.id,
-      });
 
+      const formData = new FormData();
+      formData.append("groupId", groupId);
+      formData.append("message", message);
+      formData.append("messageSenderId", logedInUser?.id);
+      for (let i = 0; i < selectedFiles.length; i++) {
+        formData.append("file", selectedFiles[i]);
+      }
+
+      dispatch(sendGroupMessage(formData))
+        .unwrap()
+        .then((res) => {
+          // console.log(res);
+          if (res.success) {
+            setSelectedFiles([]);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
       setMessage("");
     } else {
       const clientMessageId = crypto.randomUUID();
-      socket.emit("sendMessage", {
-        clientMessageId,
-        senderId: logedInUser?.id,
-        receiverId: selectedUser?.id,
-        text: message,
-        type: selectedUser?.type,
-      });
-      setPrivateMessages((prev) => {
-        return [
-          ...prev,
-          {
-            clientMessageId,
-            id: null,
-            text: message,
-            receiverId: selectedUser?.id,
-            senderId: logedInUser.id,
-            status: "Pending",
-            createdAt: new Date(),
-            deletedByMeId: null,
-            deletedForAll: false,
-          },
-        ];
-      });
+      // socket.emit("sendMessage", {
+      //   clientMessageId,
+      //   senderId: logedInUser?.id,
+      //   receiverId: selectedUser?.id,
+      //   text: message,
+      //   type: selectedUser?.type,
+      // });
+      // setPrivateMessages((prev) => {
+      //   return [
+      //     ...prev,
+      //     {
+      //       clientMessageId,
+      //       id: null,
+      //       text: message,
+      //       receiverId: selectedUser?.id,
+      //       senderId: logedInUser.id,
+      //       status: "Pending",
+      //       createdAt: new Date(),
+      //       deletedByMeId: null,
+      //       deletedForAll: false,
+      //     },
+      //   ];
+      // });
       // clientMessageId, text, senderId, receiverId, type
       const formData = new FormData();
       formData.append("clientMessageId", clientMessageId);
@@ -413,26 +452,26 @@ const ChatPage = () => {
       formData.append("receiverId", selectedUser?.id);
       formData.append("type", selectedUser?.type);
       for (let i = 0; i < selectedFiles.length; i++) {
-        formData.append("file", selectedFiles[i]); // append each file separately
+        formData.append("file", selectedFiles[i]);
       }
 
       dispatch(sendMessage(formData))
         .unwrap()
         .then((res) => {
-          console.log(res);
+          // console.log(res);
           if (res.success) {
-            console.log(res, "after success");
+            // console.log(res, "after success");
           }
         })
         .catch((error) => {
           console.log(error);
         });
       setMessage("");
-      socket.emit("stopTyping", {
-        senderId: logedInUser?.id,
-        receiverId: selectedUser?.id,
-      });
     }
+    socket.emit("stopTyping", {
+      senderId: logedInUser?.id,
+      receiverId: selectedUser?.id,
+    });
   };
   useEffect(() => {
     if (!logedInUser?.id) return;
@@ -476,6 +515,7 @@ const ChatPage = () => {
     dispatch(getGroupMessages(groupId));
   }, [selectedUser]);
   // console.log(selectedUserRef.current);
+  // console.log(messages);file
   const getDate = (date) => {
     const now = new Date(date);
     const hours24 = now.getHours();
@@ -540,7 +580,6 @@ const ChatPage = () => {
   };
 
   const handleDeleteFoEveryOne = () => {
-    setIsModelOpen(false);
     socket.emit("message:delete", {
       messageId: deleteMessageId,
       senderId: logedInUser?.id,
@@ -548,8 +587,7 @@ const ChatPage = () => {
       type: "FOR_EVERYONE",
       chatType: selectedUser?.type,
     });
-
-    // setDeleteMessageId(null);
+    setIsModelOpen(false);
   };
   const MessageStatus = ({ status }) => {
     switch (status) {
@@ -584,7 +622,7 @@ const ChatPage = () => {
   };
   // console.log(selectedUser);
   return (
-    <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito">
+    <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito relative">
       {/* Sidebar - Added a subtle border-right */}
       <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white">
         <Sidebar
@@ -642,7 +680,7 @@ const ChatPage = () => {
                   {/* 2. Secondary Status Line */}
                   <div className="flex gap-1 items-center text-sm">
                     <div className="flex items-center gap-1.5 ">
-                      {selectedUser.type === "group" ? (
+                      {selectedUser.type === "group" && (
                         <div className="flex items-center  font-medium text-gray-500">
                           <span>{groupMembers.length} members</span>
                           <span className="mx-1">•</span>
@@ -655,21 +693,13 @@ const ChatPage = () => {
                             online
                           </span>
                         </div>
-                      ) : // INDIVIDUAL STATUS
-                      onlineUsers.includes(String(selectedUser?.id)) ? (
-                        <div className="flex items-center gap-1">
-                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                          <span className="text-[11px] text-green-600 font-semibold uppercase tracking-wider">
-                            Online
-                          </span>
-                        </div>
-                      ) : selectedUser?.LastActiveAt ? (
-                        <span className="text-[#574CD6] ">
-                          Last seen {getDate(selectedUser?.LastActiveAt)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">Offline</span>
                       )}
+                      {!onlineUsers.includes(String(selectedUser.id)) &&
+                        selectedUser?.LastActiveAt && (
+                          <span className="text-[#574CD6] ">
+                            Last seen {getDate(selectedUser?.LastActiveAt)}
+                          </span>
+                        )}
                     </div>
                     {selectedUser.type === "group" && (
                       <div className="flex ml-2 gap-x-1 text-sm max-w-[400px]">
@@ -746,7 +776,7 @@ const ChatPage = () => {
                     }`}
                   >
                     <div
-                      className={` w-full max-w-[400px]  ${
+                      className={` w-full ${
                         isMe ? "justify-end" : "justify-start"
                       }`}
                     >
@@ -783,7 +813,7 @@ const ChatPage = () => {
                           />
                         ) : (
                           <div
-                            className={`px-4 relative group  py-2 shadow-sm text-sm leading-relaxed w-fit max-w-[400px] break-words ${
+                            className={` px-4 relative group  py-2 shadow-sm text-sm leading-relaxed w-fit max-w-[400px] break-words ${
                               isMe
                                 ? `${
                                     msg.text === null
@@ -829,15 +859,19 @@ const ChatPage = () => {
                               </button>
                             </div>
                             <div
-                              className={
-                                msg.text === null
-                                  ? "italic opacity-70 text-[13px]"
-                                  : ""
-                              }
+                              className={`
+                                ${
+                                  msg.text === null ? "italic  text-[13px]" : ""
+                                }
+                             flex flex-col gap-2 `}
                             >
-                              {msg.text === null
-                                ? "This message was deleted"
-                                : msg.text}
+                              <p>
+                                {" "}
+                                {msg.text === null
+                                  ? "This message was deleted"
+                                  : msg.text}
+                              </p>
+                              <FilesView msg={msg} />
                             </div>
 
                             {/* Footer: Time + Status */}
@@ -879,7 +913,7 @@ const ChatPage = () => {
                 setShowImozi={setShowImozi}
                 showImozi={showImozi}
                 selectedFiles={selectedFiles}
-                setSelectedFiles
+                setSelectedFiles={setSelectedFiles}
               />
             </div>
           </>

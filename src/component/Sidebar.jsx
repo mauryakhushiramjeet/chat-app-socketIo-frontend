@@ -173,7 +173,10 @@ const Sidebar = ({
           type: item.type,
           name: item.type === "group" ? item.name : item.chatUser?.name,
           image: item.type === "group" ? item.groupImage : item.chatUser?.image,
-          lastMessage: item.lastMessage || "Tap to chat",
+          lastMessage:
+            item.lastMessage.trim() === ""
+              ? "Send a file"
+              : item.lastMessage || "Tap to chat",
           lastMessageId: item.lastMessageId,
           LastActiveAt:
             item.type === "group" ? null : item.chatUser?.LastActiveAt,
@@ -215,7 +218,8 @@ const Sidebar = ({
             const updatedUsers = [...prevUsers];
             updatedUsers[conversationIndex] = {
               ...updatedUsers[conversationIndex],
-              lastMessage: response.text,
+              lastMessage:
+                response.text.trim() === "" ? "Send a file" : response.text,
               lastMessageCreatedAt: new Date(),
               lastMessageId,
             };
@@ -258,26 +262,30 @@ const Sidebar = ({
       setGroupImage({ image: "", file: null });
       setGroupName(null);
     });
-    socket.on("receiveGropMessage", ({ groupId, message, lastMessageId }) => {
-      console.log(
-        "new group message is receive",
-        message,
-        "message id is",
-        lastMessageId
-      );
-      setUsers((prev) =>
-        prev.map((group) =>
-          String(group.id) === String(groupId)
-            ? {
-                ...group,
-                lastMessageId: lastMessageId,
-                lastMessage: message,
-                lastMessageCreatedAt: new Date(),
-              }
-            : group
-        )
-      );
-    });
+    socket.on(
+      "receiveGropMessage",
+      ({ groupId, message, lastMessageId, file }) => {
+        console.log(
+          "new group message is receive",
+          message,
+          "message id is",
+          lastMessageId
+        );
+        setUsers((prev) =>
+          prev.map((group) =>
+            String(group.id) === String(groupId)
+              ? {
+                  ...group,
+                  lastMessageId: lastMessageId,
+                  lastMessage: message.trim() === "" ? "Send a file" : message,
+                  file: file.length > 0 ? file : null,
+                  lastMessageCreatedAt: new Date(),
+                }
+              : group
+          )
+        );
+      }
+    );
     socket.on(
       "sidebar:update",
       ({ lastMessage, sidebarChatId, type, lastMessageId, deleteType }) => {
@@ -311,7 +319,8 @@ const Sidebar = ({
             chatList.mainId === sidebarChatId && chatList.type === type
               ? {
                   ...chatList,
-                  lastMessage: lastMessage,
+                  lastMessage:
+                    lastMessage.trim() === "" ? "Send a file" : lastMessage,
                   lastMessageCreatedAt: new Date(),
                   lastMessageId: lastMessageId,
                 }
