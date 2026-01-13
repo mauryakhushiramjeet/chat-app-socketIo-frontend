@@ -22,11 +22,14 @@ const InputBox = ({
   showImozi,
   selectedFiles,
   setSelectedFiles,
+  loading,
 }) => {
+  const [fileLimitError, setFileLimitError] = useState(false);
   const imoziPickerRef = useRef(null);
   const textRef = useRef(null);
   const mediaRef = useRef(null);
   const fileRef = useRef(null);
+  const fileErrorRef = useRef(null);
 
   useEffect(() => {
     const handleImoziPickerClick = (e) => {
@@ -41,7 +44,7 @@ const InputBox = ({
     return () =>
       document.removeEventListener("mousedown", handleImoziPickerClick);
   }, [showImozi]);
-
+  console.log("loading is ", loading);
   useEffect(() => {
     if (!textRef.current) return;
 
@@ -72,6 +75,19 @@ const InputBox = ({
     // const url = URL.createObjectURL(file);
   };
   console.log(selectedFiles);
+  useEffect(() => {
+    if (selectedFiles?.length > 10) {
+      setFileLimitError(true);
+    }
+  }, [selectedFiles]);
+
+  useEffect(() => {
+    if (fileErrorRef?.current) {
+      setTimeout(() => {
+        setFileLimitError(false);
+      }, [3000]);
+    }
+  }, [fileLimitError]);
   return (
     <div className="">
       {typingUserId === selectedUser?.id && (
@@ -89,6 +105,19 @@ const InputBox = ({
           className="relative  w-full rounded-xl border-[1px] border-gray-300  focus-within:border-b-2 focus-within:border-b-[#786FDD]"
           onClick={() => textRef.current?.focus()}
         >
+          <div
+            ref={fileErrorRef}
+            className={`px-2 z-10 py-1 text-sm flex items-center justify-between w-full text-red-800 absolute top-[-19px] bg-red-200 rounded-tl-xl rounded-tr-xl ${
+              fileLimitError
+                ? "opacity-100 duration-700"
+                : "opacity-0 duration-700"
+            }`}
+          >
+            <p className="">Up to 10 files can't be uploaded at a time</p>
+            <button onClick={() => setFileLimitError(false)}>
+              <RxCross1 size={14} />
+            </button>
+          </div>
           {selectedFiles.length > 0 && (
             <div className="flex gap-3 flex-wrap p-3 max-h-40 overflow-y-auto">
               {selectedFiles.map((file, index) => (
@@ -208,9 +237,17 @@ const InputBox = ({
               title="Send"
               type="file"
               onClick={() => handleSendMessage()}
-              disabled={message.trim() === "" && selectedFiles.length === 0}
+              disabled={
+                (message.trim() === "" && selectedFiles.length === 0) ||
+                selectedFiles?.length > 10 ||
+                loading
+              }
               accept="image/*"
-              className=" text-gray-400 cursor-pointer rounded-md transition-colors hover:text-[#554AD1]"
+              className={`${
+                selectedFiles?.length > 10 || loading
+                  ? "cursor-default"
+                  : "cursor-pointer"
+              } text-gray-400 cursor-pointer rounded-md transition-colors hover:text-[#554AD1]`}
             >
               <LuSendHorizontal size={20} />
             </button>

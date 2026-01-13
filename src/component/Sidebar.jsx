@@ -99,7 +99,7 @@ const Sidebar = ({
   };
 
   const handleCreateGroup = () => {
-    if (!groupName.trim()) return toast.error("Please enter a group name");
+    if (groupName.trim()==="") return toast.error("Please enter a group name");
     if (logedInUser) {
       selectedMembers.push(logedInUser?.id);
     }

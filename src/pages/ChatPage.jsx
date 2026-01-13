@@ -49,7 +49,7 @@ const ChatPage = () => {
   const receiverMessageStore = useSelector((store) => store.getMyMessages);
   const groupMessageStore = useSelector((store) => store.groupMessages);
   const messageRef = useRef(null);
-
+  let loading = false;
   useEffect(() => {
     if (!logedInUser) return;
     const newSocket = io("http://localhost:8085");
@@ -387,12 +387,15 @@ const ChatPage = () => {
     setEditMessageId(null);
     setMessage("");
     setGroupMembers([]);
+    setSelectedFiles([]);
   }, [selectedUser]);
 
   const handleSendMessage = () => {
     console.log("click message button ");
     if (message.trim() === "" && selectedFiles.length === 0) return;
     console.log("after");
+    loading = true;
+    console.log("loading in send message become false", loading);
     if (selectedUser?.type === "group") {
       const id = selectedUser?.id;
       const groupId = id.split("-")[1];
@@ -411,6 +414,7 @@ const ChatPage = () => {
           // console.log(res);
           if (res.success) {
             setSelectedFiles([]);
+            loading = true;
           }
         })
         .catch((error) => {
@@ -461,10 +465,12 @@ const ChatPage = () => {
           // console.log(res);
           if (res.success) {
             // console.log(res, "after success");
+            loading = false;
           }
         })
         .catch((error) => {
           console.log(error);
+          loading = false;
         });
       setMessage("");
     }
@@ -514,13 +520,11 @@ const ChatPage = () => {
     const groupId = id.split("-")[1];
     dispatch(getGroupMessages(groupId));
   }, [selectedUser]);
-  // console.log(selectedUserRef.current);
-  // console.log(messages);file
+
   const getDate = (date) => {
     const now = new Date(date);
     const hours24 = now.getHours();
     const minutes = String(now.getMinutes()).padStart(2, "0");
-    const day = now.getDate().toString();
     const period = hours24 >= 12 ? "PM" : "AM";
     const hours12 = hours24 % 12 || 12;
 
@@ -620,7 +624,7 @@ const ChatPage = () => {
     setEditMessageId(null);
     setEditMessageId("");
   };
-  // console.log(selectedUser);
+
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito relative">
       {/* Sidebar - Added a subtle border-right */}
@@ -702,7 +706,7 @@ const ChatPage = () => {
                         )}
                     </div>
                     {selectedUser.type === "group" && (
-                      <div className="flex ml-2 gap-x-1 text-sm max-w-[400px]">
+                      <div className="flex ml-2 gap-x-1 text-sm max-w-[250px]">
                         <span className="truncate whitespace-nowrap">
                           {groupMembers.map((member, index) => {
                             const isMemberOnline = onlineUsers.includes(
@@ -914,6 +918,7 @@ const ChatPage = () => {
                 showImozi={showImozi}
                 selectedFiles={selectedFiles}
                 setSelectedFiles={setSelectedFiles}
+                loading={loading}
               />
             </div>
           </>
