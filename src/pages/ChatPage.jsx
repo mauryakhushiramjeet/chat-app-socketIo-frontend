@@ -14,11 +14,14 @@ import { LuSmilePlus } from "react-icons/lu";
 import { HiOutlinePencil, HiOutlineDotsHorizontal } from "react-icons/hi";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { HiArrowUturnLeft } from "react-icons/hi2";
+import { FaArrowLeft } from "react-icons/fa";
 import DeleteModel from "../component/DeleteModel";
 import InputBox from "../component/InputBox";
 import { IoCheckmark, IoCheckmarkDone, IoTimeOutline } from "react-icons/io5";
 import EditMessageArea from "../component/EditMessageArea ";
 import FilesView from "../component/FilesView";
+import Profile from "../component/Profile";
+import { getdefaultProfile } from "../helper/filePre";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -38,6 +41,8 @@ const ChatPage = () => {
   const [groupMessages, setGroupMessages] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showUserChat, setShowUserChat] = useState(false);
 
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
@@ -49,7 +54,6 @@ const ChatPage = () => {
   const receiverMessageStore = useSelector((store) => store.getMyMessages);
   const groupMessageStore = useSelector((store) => store.groupMessages);
   const messageRef = useRef(null);
-  let loading = false;
   useEffect(() => {
     if (!logedInUser) return;
     const newSocket = io("http://localhost:8085");
@@ -118,15 +122,9 @@ const ChatPage = () => {
     });
     newSocket.on("newMessage", ({ clientMessageId, response, files }) => {
       setSelectedFiles([]);
-      console.log(
-        "new message is come",
-        clientMessageId,
-        response,
-        files,
-        "file"
-      );
+
       const currentSelectedUser = selectedUserRef.current;
-      console.log(files);
+      // console.log(files);
       setPrivateMessages((prev) => {
         const updated = prev.map((msg) =>
           msg.clientMessageId === clientMessageId
@@ -139,7 +137,7 @@ const ChatPage = () => {
         );
 
         const exist = updated.some((m) => m.id === response.id);
-        console.log(exist, "exists");
+        // console.log(exist, "exists");
         if (!exist) {
           return [
             ...updated,
@@ -182,11 +180,11 @@ const ChatPage = () => {
     });
 
     newSocket.on("message:deleted", ({ messageId, type, chatType }) => {
-      console.log("get delete sinal at frontend");
+      // console.log("get delete sinal at frontend");
       const curtrentSelectedUser = selectedUserRef.current;
       const currentDeletedMessageId = deleteMessageIdRef.current;
       const currentMessages = messagesRef.current;
-      console.log("before", curtrentSelectedUser.type);
+      // console.log("before", curtrentSelectedUser.type);
 
       if (type === "FOR_EVERYONE") {
         if (chatType === "group") {
@@ -229,10 +227,10 @@ const ChatPage = () => {
           );
         }
       }
-      console.log("before update");
+      // console.log("before update");
       if (isLastMessageDeleted(currentDeletedMessageId, currentMessages)) {
-        console.log("upddate signal client-server", currentDeletedMessageId);
-        console.log(curtrentSelectedUser, "selected uset");
+        // console.log("upddate signal client-server", currentDeletedMessageId);
+        // console.log(curtrentSelectedUser, "selected uset");
         newSocket.emit("sidebar:update", {
           chatType: curtrentSelectedUser?.type,
           senderId: logedInUser?.id,
@@ -244,7 +242,7 @@ const ChatPage = () => {
       setIsModelOpen(false);
     });
     newSocket.on("receiveGropMessage", (data) => {
-      console.log(data, "group messages ");
+      // console.log(data, "group messages ");
       setGroupMessages((prevMessages) => {
         const currentSelectedUser = selectedUserRef.current;
         if (currentSelectedUser?.id !== data?.groupId) return;
@@ -272,7 +270,7 @@ const ChatPage = () => {
 
     return () => newSocket.disconnect();
   }, [logedInUser?.id]);
-  console.log();
+  // console.log();
   const messages = useMemo(() => {
     if (selectedUser?.type === "group") {
       return groupMessages;
@@ -284,17 +282,10 @@ const ChatPage = () => {
     messagesRef.current = messages; // messages from useMemo
   }, [messages]);
 
-  const getdefaultProfile = (name) => {
-    if (!name) return;
-    const spiltName = name.split(" ");
-    return spiltName.length > 1
-      ? `${spiltName[0][0]}${spiltName[1][0]}`
-      : `${spiltName[0][0]}`;
-  };
   useEffect(() => {
     onlineUserRef.current = onlineUsers;
   }, [onlineUsers]);
-  // console.log(messages, "mesages");
+  // // console.log(messages, "mesages");
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (!messages || messages.length === 0) return;
@@ -393,9 +384,12 @@ const ChatPage = () => {
   const handleSendMessage = () => {
     console.log("click message button ");
     if (message.trim() === "" && selectedFiles.length === 0) return;
-    console.log("after");
-    loading = true;
-    console.log("loading in send message become false", loading);
+    console.log("loading hit before", loading);
+    if (selectedFiles?.length !== 0) {
+      setLoading(true);
+    }
+
+    console.log(loading, "loading hit after");
     if (selectedUser?.type === "group") {
       const id = selectedUser?.id;
       const groupId = id.split("-")[1];
@@ -411,14 +405,17 @@ const ChatPage = () => {
       dispatch(sendGroupMessage(formData))
         .unwrap()
         .then((res) => {
-          // console.log(res);
+          // // console.log(res);
           if (res.success) {
             setSelectedFiles([]);
-            loading = true;
+            console.log("before success oading is", loading);
+            setLoading(false);
+            console.log("after success oading is", loading);
           }
         })
         .catch((error) => {
           console.log(error);
+          setLoading(false);
         });
       setMessage("");
     } else {
@@ -462,15 +459,17 @@ const ChatPage = () => {
       dispatch(sendMessage(formData))
         .unwrap()
         .then((res) => {
-          // console.log(res);
+          // // console.log(res);
           if (res.success) {
-            // console.log(res, "after success");
-            loading = false;
+            console.log(res, "after success");
+            console.log("before success oading is", loading);
+            setLoading(false);
+            console.log("after success oading is", loading);
           }
         })
         .catch((error) => {
           console.log(error);
-          loading = false;
+          setLoading(false);
         });
       setMessage("");
     }
@@ -502,7 +501,7 @@ const ChatPage = () => {
       !groupMessageStore?.messages
     )
       return;
-    // console.log(groupMessageStore, "groupit iskljh");
+    // // console.log(groupMessageStore, "groupit iskljh");
     setGroupMessages(groupMessageStore?.messages);
     setGroupMembers(groupMessageStore?.members);
   }, [groupMessageStore]);
@@ -546,7 +545,7 @@ const ChatPage = () => {
   const handleDeleteForMe = () => {
     setIsModelOpen(false);
     const deleteMessageId = deleteMessageIdRef.current;
-    console.log(deleteMessageId);
+    // console.log(deleteMessageId);
 
     if (!deleteMessageId || !selectedUser) return;
     socket.emit("message:delete", {
@@ -556,13 +555,13 @@ const ChatPage = () => {
       type: "FOR_ME",
       chatType: selectedUser.type,
     });
-    console.log("delete function is call");
+    // console.log("delete function is call");
   };
 
   const isLastMessageDeleted = (messageId, currentMessages) => {
-    console.log(currentMessages, "message sis here");
+    // console.log(currentMessages, "message sis here");
     const selectedUser = selectedUserRef?.current;
-    console.log("selectedUser", selectedUser);
+    // console.log("selectedUser", selectedUser);
     if (!messageId || !currentMessages || currentMessages.length === 0)
       return false;
     const deleteMessage = currentMessages.find((msg) => msg.id === messageId);
@@ -575,8 +574,8 @@ const ChatPage = () => {
     );
 
     const lastMessage = messages[messages.length - 1];
-    // console.log(deleteMessage, "deleted message", messages, "filterMessages");
-    // console.log(lastMessage, "last message this is");
+    // // console.log(deleteMessage, "deleted message", messages, "filterMessages");
+    // // console.log(lastMessage, "last message this is");
     if (!deleteMessage || !lastMessage) {
       return false;
     }
@@ -596,19 +595,19 @@ const ChatPage = () => {
   const MessageStatus = ({ status }) => {
     switch (status) {
       case "Pending":
-        return <IoTimeOutline size={13} />;
+        return <IoTimeOutline />;
       case "Send":
-        return <IoCheckmark size={15} />;
+        return <IoCheckmark />;
       case "Delivered":
-        return <IoCheckmarkDone size={15} />;
+        return <IoCheckmarkDone />;
       case "Read":
-        return <IoCheckmarkDone className="text-cyan-400" size={15} />;
+        return <IoCheckmarkDone className="text-cyan-400" />;
       default:
         return null;
     }
   };
   const handleMessageEdit = (editText, editMessageId) => {
-    console.log(editText, editMessageId);
+    // console.log(editText, editMessageId);
     setEditMessageId(editMessageId);
     setEditedMesage(editText);
     // setMessage(editText);
@@ -628,7 +627,11 @@ const ChatPage = () => {
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito relative">
       {/* Sidebar - Added a subtle border-right */}
-      <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white">
+      <div
+        className={`${
+          showUserChat && window.innerWidth <= 768 ? "hidden" : "block"
+        }  w-full max-w-full md:max-w-[280px] lg:max-w-[300px] xl:max-w-[350px] 2xl:max-w-[450px] 3xl:max-w-[500px] flex-shrink-0 border-r border-gray-200 bg-white`}
+      >
         <Sidebar
           logedInUser={logedInUser}
           setLogedInUser={setLogedInUser}
@@ -636,6 +639,8 @@ const ChatPage = () => {
           setSelectedUser={setSelectedUser}
           socket={socket}
           onlineUsers={onlineUsers}
+          showUserChat={showUserChat}
+          setShowUserChat={setShowUserChat}
         />
       </div>
 
@@ -644,32 +649,50 @@ const ChatPage = () => {
         {!selectedUser ? (
           <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-400">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <LuSmilePlus size={40} className="text-gray-300" />
+              <LuSmilePlus size={40} className="text-[#574cd6]" />
             </div>
-            <h1 className="text-xl font-semibold text-gray-600">
+            <h1 className="text-base 2xl:text-xl font-semibold text-gray-600">
               Select a Conversation
             </h1>
-            <p className="text-sm">
+            <p className="text-sm 2xl:text-lg">
               Pick a friend from the sidebar to start chatting
             </p>
           </div>
         ) : (
           <>
             {/* Chat Header - Glassmorphism style */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setShowUserChat(false);
+                  }}
+                  className={`hover:bg-white/10 rounded-full text-[#574CD6]/90 ${
+                    window.innerWidth <= 768 && showUserChat
+                      ? "block"
+                      : "hidden"
+                  }`}
+                >
+                  <FaArrowLeft />
+                </button>
                 <div className="relative">
-                  {selectedUser?.image && selectedUser.image.trim() !== "" ? (
+                  {/* {selectedUser?.image && selectedUser.image.trim() !== "" ? (
                     <img
                       src={selectedUser.image}
                       alt="User"
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-50"
+                      className="max-w-[60px] max-h-[60px] rounded-full object-cover ring-2 ring-gray-50"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
-                      {getdefaultProfile(selectedUser?.name)}
-                    </div>
-                  )}
+                    <Profile
+                      getdefaultProfile={getdefaultProfile}
+                      name={selectedUser?.name}
+                    />
+                  )} */}
+
+                  <Profile
+                    getdefaultProfile={getdefaultProfile}
+                    selectedUser={selectedUser}
+                  />
                   {onlineUsers.includes(String(selectedUser?.id)) && (
                     <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white"></div>
                   )}
@@ -677,18 +700,18 @@ const ChatPage = () => {
 
                 <div>
                   {/* 1. User/Group Name */}
-                  <div className="font-bold text-gray-800 text-base leading-tight">
+                  <div className="font-medium sm:font-bold text-gray-800 text-sm xs:text-base 2xl:text-xl 3xl:text-2xl leading-tight">
                     {selectedUser.name}
                   </div>
 
                   {/* 2. Secondary Status Line */}
-                  <div className="flex gap-1 items-center text-sm">
+                  <div className="flex gap-1 items-center text-[13px] xs:text-sm 3xl:text-xl">
                     <div className="flex items-center gap-1.5 ">
                       {selectedUser.type === "group" && (
-                        <div className="flex items-center  font-medium text-gray-500">
+                        <div className={`hidden xs:flex items-center  font-medium text-gray-500`}>
                           <span>{groupMembers.length} members</span>
                           <span className="mx-1">•</span>
-                          <span className="text-[#574CD6]">
+                          <span className="text-[#574CD6] text-sm 2xl:text-base 3xl:text-lg">
                             {
                               groupMembers.filter((m) =>
                                 onlineUsers.includes(String(m.id))
@@ -706,7 +729,7 @@ const ChatPage = () => {
                         )}
                     </div>
                     {selectedUser.type === "group" && (
-                      <div className="flex ml-2 gap-x-1 text-sm max-w-[250px]">
+                      <div className="flex ml-0 xs:ml-2 gap-x-1 max-w-[150px] xs:max-w-20 md:max-w-[100px] lg:max-w-[250px]">
                         <span className="truncate whitespace-nowrap">
                           {groupMembers.map((member, index) => {
                             const isMemberOnline = onlineUsers.includes(
@@ -736,13 +759,13 @@ const ChatPage = () => {
                   {/* 3. Group Members Detail (Only for groups) */}
                 </div>
               </div>
-              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
-                <HiOutlineDotsHorizontal size={20} />
+              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 text-[22px]">
+                <HiOutlineDotsHorizontal />
               </button>
             </div>
 
             {/* Messages Area - Subtle background color change */}
-            <div className="flex-1 px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-7">
+            <div className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-7">
               {(messages || []).map((msg) => {
                 const isChatMessage =
                   selectedUser?.type === "group"
@@ -797,10 +820,10 @@ const ChatPage = () => {
                             <img
                               src={avatarImage}
                               alt="User"
-                              className="w-6 h-6 rounded-full object-cover ring-2 ring-gray-50"
+                              className="w-6 xl:w-10 3xl:w-12 h-6 xl:h-10 3xl:h-12 rounded-full object-cover ring-2 ring-gray-50"
                             />
                           ) : (
-                            <div className="w-6 h-6 rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
+                            <div className="w-6 xl:w-10 3xl:w-12 h-6 xl:h-10 3xl:h-12 rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
                               {getdefaultProfile(avatarName)}
                             </div>
                           )}
@@ -817,7 +840,9 @@ const ChatPage = () => {
                           />
                         ) : (
                           <div
-                            className={` px-4 relative group  py-2 shadow-sm text-sm leading-relaxed w-fit max-w-[400px] break-words ${
+                            className={`px-2 sm:px-3 2xl:px-4 relative group py-1 sm:py-2 shadow-sm text-sm leading-relaxed max-w-[230px] xs:max-w-[250px] lg:max-w-[300px] xl:max-w-[350px] 2xl:max-w-[500px]  3xl:max-w-[624px] flex ${
+                              selectedFiles?.length > 0 ? "flex-1" : "w-fit"
+                            } flex-col break-words ${
                               isMe
                                 ? `${
                                     msg.text === null
@@ -864,12 +889,10 @@ const ChatPage = () => {
                             </div>
                             <div
                               className={`
-                                ${
-                                  msg.text === null ? "italic  text-[13px]" : ""
-                                }
+                                ${msg.text === null ? "hidden" : "block"}
                              flex flex-col gap-2 `}
                             >
-                              <p>
+                              <p className="text-sm 2xl:text-lg 3xl:text-[22px] leading-loose">
                                 {" "}
                                 {msg.text === null
                                   ? "This message was deleted"
@@ -880,17 +903,19 @@ const ChatPage = () => {
 
                             {/* Footer: Time + Status */}
                             <div
-                              className={`text-[10px] mt-1 flex items-center gap-1 ${
+                              className={`mt-1 flex items-center gap-1 ${
                                 isMe
                                   ? "text-indigo-100 justify-end"
                                   : "text-gray-500 justify-start"
                               }`}
                             >
-                              <span>{getDate(msg?.createdAt)}</span>
+                              <span className="text-[10px] sm:text-xs 2xl:text-sm 3xl:text-lg">
+                                {getDate(msg?.createdAt)}
+                              </span>
 
                               {/* Status Icons - Only show for messages I sent */}
                               {isMe && (
-                                <span className="flex items-center ml-0.5">
+                                <span className="flex items-center text-base 2xl:text-xl 3xl:text-2xl">
                                   <MessageStatus status={msg.status} />
                                 </span>
                               )}
@@ -906,7 +931,7 @@ const ChatPage = () => {
             </div>
 
             {/* Input Wrapper - Clean Padding */}
-            <div className="px-12 py-4">
+            <div className="px-5 xl:px-12 py-4">
               <InputBox
                 typingUserId={typingUserId}
                 selectedUser={selectedUser}

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { signupUser } from "../store/actions/userActions.js"
+import { signupUser } from "../store/actions/userActions.js";
 
 const SignupPage = () => {
   const [form, setForm] = useState({
@@ -47,7 +47,7 @@ const SignupPage = () => {
           } else {
             toast.error(res.message);
           }
-        })
+        });
     } catch (err) {
       console.log(err);
     }

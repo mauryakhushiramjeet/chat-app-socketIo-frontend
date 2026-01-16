@@ -18,6 +18,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { createGroup } from "../store/actions/groupAction";
 import { getSidebarChatList } from "../store/actions/sidebarChatListActions";
+import Profile from "./Profile";
 
 const Sidebar = ({
   logedInUser,
@@ -26,6 +27,8 @@ const Sidebar = ({
   socket,
   setLogedInUser,
   onlineUsers,
+  showUserChat,
+  setShowUserChat,
 }) => {
   const [searchText, setSearchText] = useState("");
   const [seratchingUser, setSearchingUser] = useState([]);
@@ -99,7 +102,8 @@ const Sidebar = ({
   };
 
   const handleCreateGroup = () => {
-    if (groupName.trim()==="") return toast.error("Please enter a group name");
+    if (groupName.trim() === "")
+      return toast.error("Please enter a group name");
     if (logedInUser) {
       selectedMembers.push(logedInUser?.id);
     }
@@ -160,10 +164,6 @@ const Sidebar = ({
 
   useEffect(() => {
     if (!sidebarChatListStore?.isError && !sidebarChatListStore?.isLoading) {
-      // console.log(
-      //   sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions,
-      //   "print group convrsation"
-      // );
       const normalizedUsers = (
         sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions || []
       ).map((item) => {
@@ -421,16 +421,19 @@ const Sidebar = ({
     localStorage.removeItem("userData");
     navigate("/");
   };
-
+  const handleUserChatSelect = (userCoversation) => {
+    setSelectedUser(userCoversation);
+    setShowUserChat(true);
+  };
   return (
-    <div className="w-80 bg-[#574CD6] text-white flex flex-col h-screen border-r border-white/10 shadow-2xl relative overflow-hidden">
+    <div className="w-full bg-[#574CD6] text-white flex flex-col h-screen border-r border-white/10 shadow-2xl relative overflow-hidden">
       {/* create group section */}
       <div
         className={`absolute inset-0 bg-[#574CD6] z-[70] transition-transform duration-300 ease-in-out ${
           showGroupCreate ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-5 flex items-center gap-4 bg-[#4633A6]/40 border-b border-white/10">
+        <div className="p-5 lg:p-5 flex items-center gap-4 bg-[#4633A6]/40 border-b border-white/10 text-base 2xl:text-lg 3xl:text-2xl ">
           <button
             onClick={() => {
               setShowGroupCreate(false);
@@ -438,14 +441,14 @@ const Sidebar = ({
               setGroupImage({ image: "", file: null });
               setGroupName(null);
             }}
-            className="p-2 hover:bg-white/10 rounded-full"
+            className="hover:bg-white/10 rounded-full"
           >
             <FaArrowLeft />
           </button>
-          <p className="font-bold text-lg">Create Group</p>
+          <p className="3xl:font-bold">Create Group</p>
         </div>
 
-        <div className="p-6 flex flex-col h-[calc(100%-80px)]">
+        <div className="p-4 lg:p-6 flex flex-col h-[calc(100%-80px)]">
           {/* Group Icon & Name */}
           <div className="flex flex-col items-center mb-6">
             <div
@@ -477,29 +480,29 @@ const Sidebar = ({
             <input
               type="text"
               placeholder="Enter group name"
-              className="mt-4 w-full bg-transparent border-b border-white/20 py-2 outline-none text-center font-bold placeholder:text-white/40"
+              className="mt-4 w-full bg-transparent border-b border-white/20 py-2 outline-none text-center font-bold placeholder:text-white/40 text-base 3xl:text-2xl"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
             />
           </div>
 
           {/* Grop created member heres */}
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">
+          <p className="text-xs lg:text-sm 3xl:text-xl font-bold uppercase tracking-widest text-white/40 mb-3">
             Select Members
           </p>
-          <div className="flex-1 overflow-y-auto sidebar-scroll pr-2">
+          <div className="flex flex-col flex-1 gap-3 overflow-y-auto sidebar-scroll  pr-2">
             {friends?.map((friend) => (
               <div
                 key={friend.id}
                 onClick={() => toggleMember(friend.id)}
-                className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer mb-1 transition-all ${
+                className={`flex items-center gap-3  p-2 rounded-xl cursor-pointer mb-1 transition-all ${
                   selectedMembers.includes(friend.id)
                     ? "bg-white/20"
                     : "hover:bg-white/10"
                 }`}
               >
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-                  {friend.image ? (
+                  {/* {friend.image ? (
                     <img
                       src={friend.image}
                       className="w-full h-full object-cover"
@@ -508,18 +511,24 @@ const Sidebar = ({
                     <span className="text-[10px]">
                       {getdefaultProfile(friend.name)}
                     </span>
-                  )}
+                  )} */}
+                  <Profile
+                    getdefaultProfile={getdefaultProfile}
+                    selectedUser={friend}
+                  />
                 </div>
-                <span className="text-sm flex-1 truncate">{friend.name}</span>
+                <span className="text-sm 2xl:text-xl 3xl:text-[22px] flex-1 truncate">
+                  {friend.name}
+                </span>
                 <div
-                  className={`w-4 h-4 rounded-md border flex items-center justify-center ${
+                  className={`w-4 h-4 2xl:h-8 2xl:w-8 rounded-full border flex items-center justify-center ${
                     selectedMembers.includes(friend.id)
                       ? "bg-green-500 border-green-500"
                       : "border-white/30"
                   }`}
                 >
                   {selectedMembers.includes(friend.id) && (
-                    <FaCheck className="text-[8px]" />
+                    <FaCheck className="text-lg" />
                   )}
                 </div>
               </div>
@@ -528,7 +537,7 @@ const Sidebar = ({
 
           <button
             onClick={handleCreateGroup}
-            className="mt-4 w-full bg-white text-[#574CD6] py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-all"
+            className="mt-4 w-full bg-white text-[#574CD6] py-2 3xl:py-3 rounded-xl font-semibold 3xl:font-bold shadow-lg active:scale-95 transition-all text-base 3xl:text-lg"
           >
             Create Group ({selectedMembers.length})
           </button>
@@ -541,22 +550,22 @@ const Sidebar = ({
           showProfile ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-5 flex items-center gap-4 bg-[#4633A6]/40 border-b border-white/10">
+        <div className="px-3 sm:px-8 md:px-4 py-4 lg:px-5 lg:py-5 flex items-center gap-4 md:gap-2 3xl:gap-4 bg-[#4633A6]/40 border-b border-white/10 text-base xl:text-lg 3xl:text-2xl">
           <button
             onClick={() => setShowProfile(false)}
-            className="p-2 hover:bg-white/10 rounded-full"
+            className="hover:bg-white/10 rounded-full"
           >
             <FaArrowLeft />
           </button>
-          <p className="font-bold text-lg">Profile</p>
+          <p className="3xl:font-bold">Profile</p>
         </div>
 
-        <div className="p-8 flex flex-col items-center">
+        <div className="p-3 sm:p-8 md:p-4 lg:p-8 flex flex-col items-center">
           <div
             className="relative group cursor-pointer"
             onClick={handleImageClick}
           >
-            <div className="w-40 h-40 rounded-full border-4 border-white/20 overflow-hidden shadow-2xl">
+            <div className="w-28 xl:w-32 2xl:w-40 h-28 xl:h-32 2xl:h-40 rounded-full border-4 border-white/20 overflow-hidden shadow-2xl">
               {profile?.image ? (
                 <img
                   src={profile?.image}
@@ -565,7 +574,7 @@ const Sidebar = ({
                 />
               ) : (
                 <div className="w-full h-full bg-white flex items-center justify-center">
-                  <span className="text-[#574CD6] text-5xl font-black">
+                  <span className="text-[#574CD6] text-4xl 2xl:text-5xl font-black">
                     {getdefaultProfile(logedInUser?.name)}
                   </span>
                 </div>
@@ -573,7 +582,7 @@ const Sidebar = ({
             </div>
             <div className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <FaCamera className="text-white text-3xl mb-1" />
-              <span className="text-[10px] uppercase font-bold text-white">
+              <span className="text-[10px] 2xl:text-base uppercase font-bold text-white">
                 Change Photo
               </span>
             </div>
@@ -588,13 +597,13 @@ const Sidebar = ({
           />
 
           <div className="mt-8 w-full">
-            <label className="text-xs text-white/50 uppercase tracking-widest font-bold">
+            <label className="text-xs 2xl:text-lg text-white/50 uppercase tracking-widest font-bold">
               Your Name
             </label>
             <div className="flex justify-between items-center mt-2 border-b border-white/20 pb-2">
               <input
                 type="text"
-                className="text-sm outline-none bg-transparent font-medium"
+                className="text-sm 2xl:text-lg outline-none bg-transparent font-medium"
                 value={profile?.name}
                 onChange={(e) =>
                   setProfile((prev) => ({
@@ -607,14 +616,14 @@ const Sidebar = ({
             </div>
           </div>
 
-          <div className="mt-6 w-full">
-            <label className="text-xs text-white/50 uppercase tracking-widest font-bold">
+          <div className="mt-[10px] w-full">
+            <label className="text-xs 2xl:text-lg text-white/50 uppercase tracking-widest font-bold">
               About
             </label>
             <div className="flex justify-between items-center mt-2 border-b border-white/20 pb-2">
               <input
                 type="text"
-                className="text-sm outline-none font-medium bg-transparent"
+                className="text-sm 2xl:text-lg outline-none font-medium bg-transparent"
                 value={profile?.about}
                 onChange={(e) =>
                   setProfile((prev) => ({
@@ -626,21 +635,21 @@ const Sidebar = ({
               <FaPencilAlt className="text-white/40 cursor-pointer hover:text-white" />
             </div>
           </div>
-          <div className="mt-10 w-full px-2">
+          <div className="mt-10 w-full px-2 text-base 3xl:text-lg flex flex-col items-center">
             <button
               onClick={() => upadteProfileImage()}
               disabled={!isChanged}
-              className={`w-full ${
+              className={`w-[200px]  md:w-full px-8 md:px-0 ${
                 isChanged ? "bg-gray-100 hover:bg-gray-100" : "bg-gray-100/50"
-              }  text-[#574CD6] py-3 rounded-xl font-bold shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
+              }  text-[#574CD6] py-2 md:py-[6px] rounded-xl font-bold shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
             >
               Save Changes
             </button>
             <button
               onClick={() => handleLogout()}
-              className={`w-full 
-                 bg-red-500/90 hover:bg-red-700  mt-5
-              text-white py-3 rounded-xl font-bold shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
+              className={`w-[200px]  md:w-full px-8 md:px-0 
+                 bg-red-500/90 hover:bg-red-700  mt-3
+              text-white py-2 md:py-[6px] rounded-xl font-bold shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
             >
               Log Out
             </button>
@@ -651,51 +660,53 @@ const Sidebar = ({
       {/* --- SIDER HEADER --- */}
       <div
         onClick={() => setShowProfile(true)}
-        className="p-5 flex items-center gap-3 bg-[#4633A6]/40 border-b border-white/10 cursor-pointer hover:bg-[#4633A6]/60 transition-all group"
+        className="px-3 sm:px-8 md:px-5 py-5 flex items-center gap-3 bg-[#4633A6]/40 border-b border-white/10 cursor-pointer hover:bg-[#4633A6]/60 transition-all group"
       >
         <div className="relative shrink-0">
-          {logedInUser?.image && logedInUser.image.trim() !== "" ? (
+          {/* {logedInUser?.image && logedInUser.image.trim() !== "" ? (
             <img
               src={logedInUser.image}
               alt="Me"
               className="w-12 h-12 rounded-full border-2 border-white/30 object-cover"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-inner">
-              <p className="text-[#574CD6] font-black text-sm">
-                {getdefaultProfile(logedInUser?.name)}
-              </p>
-            </div>
-          )}
+            <Profile getdefaultProfile={getdefaultProfile} name={logedInUser?.name}/>
+          )} */}
+          <Profile
+            getdefaultProfile={getdefaultProfile}
+            selectedUser={logedInUser}
+          />
           <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <FaPencilAlt className="text-[#574CD6] text-[8px]" />
           </div>
         </div>
         <div className="overflow-hidden">
-          <p className="font-bold text-lg leading-tight truncate">
+          <p className="font-bold text-base 2xl:text-[22px] 3xl:text-2xl leading-tight truncate">
             {logedInUser?.name}
           </p>
-          <p className="text-[10px] text-white/50">Click to view profile</p>
+          <p className="text-sm 2xl:text-lg text-white/50 mt-1">
+            Click to view profile
+          </p>
         </div>
       </div>
 
       {/* search div for serach users */}
-      <div className="p-4 relative">
-        <div className="relative group">
+      <div className="p-3 sm:p-8 md:p-4 relative ">
+        <div className="relative group text-sm 2xl:text-lg 3xl:text-xl">
           <input
             type="text"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Search conversations..."
-            className="w-full py-2.5 px-4 pr-10 rounded-xl bg-white/10 border border-white/10 text-sm placeholder:text-white/50 focus:outline-none focus:bg-white focus:text-gray-800 transition-all duration-300"
+            className="w-full py-2 px-4 pr-10 rounded-xl bg-white/10 border border-white/10 placeholder:text-white/50 focus:outline-none focus:bg-white focus:text-gray-800  transition-all duration-300 "
           />
-          <span className="absolute right-3 top-2.5 text-white/30 group-focus-within:text-gray-400">
+          <span className="absolute right-3 top-2.5 text-white/50 group-focus-within:text-gray-400">
             <GoSearch />
           </span>
         </div>
 
         {searchText.trim() !== "" && (
-          <div className="absolute left-4 right-4 mt-2 max-h-60 overflow-y-auto z-50 rounded-xl bg-white shadow-2xl sidebar-scroll">
+          <div className="absolute left-4 right-4 mt-2 max-h-60 2xl:max-h-[350px] overflow-y-auto z-50 rounded-xl bg-white shadow-2xl sidebar-scroll">
             {seratchingUser?.length > 0 ? (
               seratchingUser.map((user) => (
                 <div
@@ -703,28 +714,36 @@ const Sidebar = ({
                   onClick={() => {
                     setSelectedUser({ ...user, type: "chat" });
                     setSearchText("");
+                    if (window.innerWidth <= 768) {
+                      setShowUserChat(true);
+                    }
                   }}
                   className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-0"
                 >
-                  <div className="relative w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {user.image ? (
+                  {/* <div className="relative w-8 h-8  bg-gray-200 flex items-center justify-center overflow-hidden"> */}
+                  {/* {user.image ? (
                       <img
                         src={user.image}
                         className="w-full h-full object-cover"
+                        alt=""
                       />
                     ) : (
                       <span className="text-[#574CD6] text-[10px] font-bold">
                         {getdefaultProfile(user.name)}
                       </span>
-                    )}
-                  </div>
-                  <p className="text-gray-800 font-semibold text-sm">
+                    )} */}
+                  <Profile
+                    getdefaultProfile={getdefaultProfile}
+                    selectedUser={user}
+                  />
+                  {/* </div> */}
+                  <p className="text-gray-800 font-semibold text-sm 2xl:text-xl">
                     {user.name}
                   </p>
                 </div>
               ))
             ) : (
-              <p className="p-4 text-gray-400 text-xs text-center">
+              <p className="p-2 lg:p-3 xl:p-4 text-gray-400 text-xs xl:text-lg  2xl:text-xl text-center">
                 No users found
               </p>
             )}
@@ -733,33 +752,33 @@ const Sidebar = ({
       </div>
 
       {/* {conversation loist} */}
-      <div className="flex-1 overflow-y-auto sidebar-scroll px-3 pb-4">
+      <div className="flex-1 overflow-y-auto sidebar-scroll px-3 sm:px-8 md:px-2 lg:px-3 pb-4">
         {/* Header with Group Create Button */}
-        <div className="flex justify-between items-center px-2 mb-3">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+        <div className="flex justify-between items-center px-2 mb-3 2xl:mb-5 3xl:mb-9 text-xs xl:text-sm 2xl:text-base 3xl:text-lg">
+          <h3 className="font-bold uppercase tracking-widest text-white/40">
             Recent Messages
           </h3>
           <button
             onClick={() => setShowGroupCreate(true)}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
+            className="sm:p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
             title="Create New Group"
           >
-            <MdGroupAdd className="text-lg text-white/60 group-hover:text-white" />
+            <MdGroupAdd className="text-white/60 group-hover:text-white text-2xl" />
           </button>
         </div>
 
         {(sortedUsers || []).map((userCoversation) => (
           <div
             key={userCoversation.id}
-            onClick={() => setSelectedUser(userCoversation)}
-            className={`flex items-center gap-3 p-3 mb-1 rounded-2xl cursor-pointer user-item-transition group ${
+            onClick={() => handleUserChatSelect(userCoversation)}
+            className={`flex items-center gap-4 sm:gap-7 md:gap-3 p-2 lg:p-3 mb-1 rounded-2xl cursor-pointer user-item-transition group ${
               selectedUser?.id === userCoversation?.id
                 ? "bg-white text-[#a69efa] shadow-lg"
                 : "hover:bg-white/10"
             }`}
           >
-            <div className="relative shrink-0">
-              {userCoversation?.image ? (
+            <div className="relative">
+              {/* {userCoversation?.image ? (
                 <img
                   src={userCoversation?.image}
                   className={`w-12 h-12 rounded-full border-2 object-cover ${
@@ -778,7 +797,12 @@ const Sidebar = ({
                 >
                   {getdefaultProfile(userCoversation?.name)}
                 </div>
-              )}
+              )} */}
+              <Profile
+                getdefaultProfile={getdefaultProfile}
+                selectedUser={userCoversation}
+                className="border-none"
+              />
               {onlineUsers.includes(String(userCoversation?.id)) && (
                 <div className="absolute bottom-0 right-0 w-[15px] h-[15px] rounded-full bg-green-500 flex items-center justify-center border-2 border-[#574CD6]">
                   <FaCheck className="text-[8px] text-gray-900" />
@@ -786,9 +810,9 @@ const Sidebar = ({
               )}
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className=" flex-1 min-w-0">
               <p
-                className={`font-bold truncate ${
+                className={`sm:font-semibold truncate text-base 3xl:text-xl ${
                   selectedUser?.id === userCoversation?.id
                     ? "text-[#574CD6]"
                     : "text-white"
@@ -796,18 +820,18 @@ const Sidebar = ({
               >
                 {userCoversation?.name}
               </p>
-              <div className="flex justify-between items-center text-xs">
+              <div className="flex gap-3 justify-between items-center text-sm xl:text-base 3xl:text-xl 2xl:mt-2 3xl:mt-3">
                 <p
                   className={`truncate ${
                     selectedUser?.id === userCoversation?.id
-                      ? "text-[#574CD6]/60"
+                      ? "text-[#574CD6]/80"
                       : "text-white/50"
                   }`}
                 >
                   {userCoversation?.lastMessage || "Tap to chat"}
                 </p>
                 {userCoversation?.lastMessageCreatedAt && (
-                  <p className="opacity-40 ml-2 shrink-0">
+                  <p className="opacity-70 ml-2 shrink-0 text-xs xl:text-sm">
                     {getDate(userCoversation?.lastMessageCreatedAt)}
                   </p>
                 )}
