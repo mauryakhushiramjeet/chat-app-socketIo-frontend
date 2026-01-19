@@ -75,3 +75,15 @@ export const getGroupMessages = createAsyncThunk(
     }
   }
 );
+export const updateMessageFile = createAsyncThunk(
+  "post/updateMessageFile",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put("/updateMessageFile", formData);
+      return response.data;
+    } catch (error) {
+      console.log("AXIOS ERROR:", error.response);
+      return rejectWithValue(error?.response?.data?.message);
+    }
+  }
+);

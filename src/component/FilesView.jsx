@@ -96,6 +96,7 @@ const FilesView = ({ msg }) => {
 
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
+  // console.log(viewImage, "view");
   return (
     <div className="flex flex-wrap gap-2 ">
       {viewImage !== null && (
@@ -133,14 +134,14 @@ const FilesView = ({ msg }) => {
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
-              {viewImage[0]?.fileType?.startsWith("video/") && (
+              {viewImage?.fileType?.startsWith("video/") && (
                 <div className="h-full w-full relative">
                   <video
                     // ref={(el) =>
                     //   (currentScrolledVideo.current[viewImage?.id] = el)
                     // }
                     controls
-                    src={viewImage[0]?.filePath}
+                    src={viewImage?.filePath}
                     alt="viewfileimage"
                     className="w-full h-full shadow-2xl  object-fill border border-gray-300/10 overflow-hidden rounded-lg"
                     onClick={(e) => e.stopPropagation()}
@@ -348,7 +349,7 @@ const FilesView = ({ msg }) => {
                 <div
                   onClick={() => handleFileClick(file)}
                   // onClick={()=>window.open(file?.filePath, "_blank")}
-                  className="text-sm xl:text-base 2xl:text-xl 3xl:text-2xl font-semibold bg-white h-fit rounded-lg p-2 border-2 text-[#564BD4] flex items-center gap-2 cursor-pointer border-gray-200 w-full max-w-[120px] xs:max-w-[184px] sm:max-w-full"
+                  className="text-xs xl:text-sm 2xl:text-lg 3xl:text-xl font-semibold bg-white h-fit rounded-lg p-2 border-2 text-[#564BD4] flex items-center gap-2 cursor-pointer border-gray-200 w-full max-w-[120px] xs:max-w-[184px] sm:max-w-full"
                 >
                   <span className="font-bold">
                     {" "}

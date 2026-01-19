@@ -12,6 +12,7 @@ import { SlPicture } from "react-icons/sl";
 import { RxCross1 } from "react-icons/rx";
 import { LuLoaderCircle } from "react-icons/lu";
 import { getdefaultProfile } from "../helper/filePre";
+import { getDate } from "../helper/getDate";
 
 const InputBox = ({
   typingUserId,
@@ -25,6 +26,8 @@ const InputBox = ({
   selectedFiles,
   setSelectedFiles,
   loading,
+  replyTomessage,
+  setReplyToMessage,
 }) => {
   const [fileLimitError, setFileLimitError] = useState(false);
   const imoziPickerRef = useRef(null);
@@ -47,7 +50,7 @@ const InputBox = ({
     return () =>
       document.removeEventListener("mousedown", handleImoziPickerClick);
   }, [showImozi]);
-  console.log("loading is in input ", loading);
+  // console.log("loading is in input ", loading);
   useEffect(() => {
     if (!textRef.current) return;
 
@@ -91,6 +94,7 @@ const InputBox = ({
       }, [3000]);
     }
   }, [fileLimitError]);
+  // console.log(replyTomessage);
   return (
     <div className="">
       {typingUserId === selectedUser?.id && (
@@ -127,6 +131,58 @@ const InputBox = ({
               <RxCross1 />
             </button>
           </div>
+          {replyTomessage && (
+            <div className="p-2 bg-[#574CD6] rounded-lg w-full max-w-[250px] sm:max-w-[400px] mx-3 mt-3 text-white text-xs">
+              <div className="w-full flex justify-between">
+                {" "}
+                <div className="flex gap-2">
+                  <p>{selectedUser?.name}</p>{" "}
+                  <p className="text-gray-300">
+                    {getDate(replyTomessage?.createdAt)}
+                  </p>
+                </div>{" "}
+                <button
+                  onClick={() => setReplyToMessage(null)}
+                  className=" rounded-full  transition-colors"
+                  title="Remove referance"
+                >
+                  <RxCross1 />
+                </button>
+              </div>
+
+              <div className="mt-1 truncate">
+                {" "}
+                {replyTomessage?.text && replyTomessage?.text.trim() !== "" && (
+                  <p
+                    className={`${
+                      replyTomessage?.file?.length === 0
+                        ? "overflow-hidden text-ellipsis line-clamp-2"
+                        : ""
+                    }`}
+                  >
+                    {replyTomessage?.text}
+                  </p>
+                )}
+                {replyTomessage?.file && replyTomessage?.file.length > 0 && (
+                  <div className="flex gap-1 items-center truncate">
+                    {replyTomessage?.file.map((file) => (
+                      <p className="flex gap-1 items-center">
+                        {file?.fileType?.startsWith("image/") && <SlPicture />}
+                        {file?.fileType?.startsWith("video/") && (
+                          <RiVideoFill />
+                        )}
+                        {!file.fileType?.startsWith("video/") &&
+                          !file.fileType?.startsWith("image/") && (
+                            <AiOutlineFile />
+                          )}
+                        {file?.fileName}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {selectedFiles.length > 0 && (
             <div className="flex gap-3 flex-wrap p-3 max-h-40 overflow-y-auto">
               {selectedFiles.map((file, index) => (
@@ -186,15 +242,18 @@ const InputBox = ({
             placeholder="Type a message..."
             rows={0.5}
             // cols={1}
-            className="w-full text-base 3xl:text-2xl hide-scrollbar rounded-xl px-3 pt-3  resize-none focus:outline-none max-h-[200px] overflow-y-auto"
+            className="w-full text-sm 2xl:text-base 3xl:text-xl hide-scrollbar rounded-xl px-3 pt-3  resize-none focus:outline-none max-h-[200px] overflow-y-auto"
           />{" "}
           <div className="flex gap-3 3xl:gap-5 px-3 pb-3 items-center justify-end w-full relative text-lg xl:text-xl 3xl:text-3xl">
             {showImozi && (
               <div
                 ref={imoziPickerRef}
-                className="absolute right-[70px] bottom-[45px] w-[320px] h-[150px]"
+                className="absolute right-[70px] bottom-[45px] w-[280px] h-[300px] sm:w-[320px] sm:h-[400px] overflow-y-scroll"
               >
                 <Picker
+                  className=""
+                  emojiStyle="small"
+                  // emoji
                   onEmojiClick={(emojiObject) => {
                     setMessage((prev) => prev + emojiObject.emoji);
                     setShowImozi(false);

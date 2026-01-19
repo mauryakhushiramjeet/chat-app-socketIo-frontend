@@ -1,7 +1,7 @@
 import React from "react";
 
 const Profile = ({ getdefaultProfile, selectedUser, className }) => {
-  console.log(className);
+  // console.log(className);
   return (
     <div className="w-[35px] sm:w-[50px] md:w-[35px] 2xl:w-[50px] 3xl:w-[65px] h-[35px] sm:h-[50px] md:h-[35px] 2xl:h-[50px] 3xl:h-[65px]">
       {" "}

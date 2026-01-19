@@ -196,16 +196,16 @@ const Sidebar = ({
     socket.on(
       "newMessage",
       ({ response, targetChatUserId, conversationId, type, lastMessageId }) => {
-        console.log("mnasbjhga");
-        console.log(
-          "new message",
-          response,
-          "targetListId",
-          targetChatUserId,
-          conversationId,
-          type,
-          lastMessageId
-        );
+        // console.log("mnasbjhga");
+        // console.log(
+        //   "new message",
+        //   response,
+        //   "targetListId",
+        //   targetChatUserId,
+        //   conversationId,
+        //   type,
+        //   lastMessageId
+        // );
         // console.log("conversationId", conversationId);
         console.log(lastMessageId, "lastmessageId");
         setUsers((prevUsers) => {
@@ -433,7 +433,7 @@ const Sidebar = ({
           showGroupCreate ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="p-5 lg:p-5 flex items-center gap-4 bg-[#4633A6]/40 border-b border-white/10 text-base 2xl:text-lg 3xl:text-2xl ">
+        <div className="p-5 lg:p-5 flex items-center gap-4 bg-[#4633A6]/40 border-b border-white/10 text-sm 2xl:text-lg 3xl:text-2xl ">
           <button
             onClick={() => {
               setShowGroupCreate(false);
@@ -450,7 +450,7 @@ const Sidebar = ({
 
         <div className="p-4 lg:p-6 flex flex-col h-[calc(100%-80px)]">
           {/* Group Icon & Name */}
-          <div className="flex flex-col items-center mb-6">
+          <div className="flex flex-col items-center mb-3 3xl:mb-6">
             <div
               className="relative group cursor-pointer"
               onClick={handleGroupImageClick}
@@ -480,26 +480,26 @@ const Sidebar = ({
             <input
               type="text"
               placeholder="Enter group name"
-              className="mt-4 w-full bg-transparent border-b border-white/20 py-2 outline-none text-center font-bold placeholder:text-white/40 text-base 3xl:text-2xl"
+              className="mt-4 w-full bg-transparent border-b border-white/20 py-2 outline-none text-center font-bold placeholder:text-white/40 text-sm 2xl:text-base 3xl:text-2xl"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
             />
           </div>
 
           {/* Grop created member heres */}
-          <p className="text-xs lg:text-sm 3xl:text-xl font-bold uppercase tracking-widest text-white/40 mb-3">
+          <p className="text-xs 2xl:text-sm 3xl:text-xl font-bold uppercase tracking-widest text-white/40 mb-3">
             Select Members
           </p>
-          <div className="flex flex-col flex-1 gap-3 overflow-y-auto sidebar-scroll  pr-2">
+          <div className="flex flex-col flex-1 gap-1 2xl:gap-3  overflow-y-auto sidebar-scroll  pr-2">
             {friends?.map((friend) => (
               <div
                 key={friend.id}
                 onClick={() => toggleMember(friend.id)}
-                className={`flex items-center gap-3  p-2 rounded-xl cursor-pointer mb-1 transition-all ${
+                className={`flex items-center gap-3 2xl:gap-3 p-1 2xl;p-2 rounded-xl cursor-pointer transition-all ${
                   selectedMembers.includes(friend.id)
                     ? "bg-white/20"
                     : "hover:bg-white/10"
-                }`}
+                }`} 
               >
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
                   {/* {friend.image ? (
@@ -537,7 +537,7 @@ const Sidebar = ({
 
           <button
             onClick={handleCreateGroup}
-            className="mt-4 w-full bg-white text-[#574CD6] py-2 3xl:py-3 rounded-xl font-semibold 3xl:font-bold shadow-lg active:scale-95 transition-all text-base 3xl:text-lg"
+            className="mt-4 w-full bg-white text-[#574CD6] py-2 3xl:py-3 rounded-xl font-medium 3xl:font-bold shadow-lg active:scale-95 transition-all text-sm 2xl:text-base 3xl:text-lg"
           >
             Create Group ({selectedMembers.length})
           </button>
@@ -550,7 +550,7 @@ const Sidebar = ({
           showProfile ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="px-3 sm:px-8 md:px-4 py-4 lg:px-5 lg:py-5 flex items-center gap-4 md:gap-2 3xl:gap-4 bg-[#4633A6]/40 border-b border-white/10 text-base xl:text-lg 3xl:text-2xl">
+        <div className="px-3 sm:px-8 md:px-4 py-4 lg:px-5 lg:py-5 flex items-center gap-4 md:gap-2 3xl:gap-4 bg-[#4633A6]/40 border-b border-white/10 text-sm xl:text-lg 3xl:text-2xl">
           <button
             onClick={() => setShowProfile(false)}
             className="hover:bg-white/10 rounded-full"
@@ -635,13 +635,13 @@ const Sidebar = ({
               <FaPencilAlt className="text-white/40 cursor-pointer hover:text-white" />
             </div>
           </div>
-          <div className="mt-10 w-full px-2 text-base 3xl:text-lg flex flex-col items-center">
+          <div className="mt-10 w-full px-2 text-sm 3xl:text-lg flex flex-col items-center">
             <button
               onClick={() => upadteProfileImage()}
               disabled={!isChanged}
               className={`w-[200px]  md:w-full px-8 md:px-0 ${
                 isChanged ? "bg-gray-100 hover:bg-gray-100" : "bg-gray-100/50"
-              }  text-[#574CD6] py-2 md:py-[6px] rounded-xl font-bold shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
+              }  text-[#574CD6] py-2 md:py-[6px] rounded-xl font-medium 2xl:font-bold  shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
             >
               Save Changes
             </button>
@@ -649,7 +649,7 @@ const Sidebar = ({
               onClick={() => handleLogout()}
               className={`w-[200px]  md:w-full px-8 md:px-0 
                  bg-red-500/90 hover:bg-red-700  mt-3
-              text-white py-2 md:py-[6px] rounded-xl font-bold shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
+              text-white py-2 md:py-[6px] rounded-xl font-medium 2xl:font-bold shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
             >
               Log Out
             </button>
@@ -681,10 +681,10 @@ const Sidebar = ({
           </div>
         </div>
         <div className="overflow-hidden">
-          <p className="font-bold text-base 2xl:text-[22px] 3xl:text-2xl leading-tight truncate">
+          <p className="font-bold text-sm 2xl:text-[22px] 3xl:text-2xl leading-tight truncate">
             {logedInUser?.name}
           </p>
-          <p className="text-sm 2xl:text-lg text-white/50 mt-1">
+          <p className="text-xs 2xl:text-base text-white/50 mt-1">
             Click to view profile
           </p>
         </div>
@@ -754,7 +754,7 @@ const Sidebar = ({
       {/* {conversation loist} */}
       <div className="flex-1 overflow-y-auto sidebar-scroll px-3 sm:px-8 md:px-2 lg:px-3 pb-4">
         {/* Header with Group Create Button */}
-        <div className="flex justify-between items-center px-2 mb-3 2xl:mb-5 3xl:mb-9 text-xs xl:text-sm 2xl:text-base 3xl:text-lg">
+        <div className="flex justify-between items-center px-2 mb-3 2xl:mb-5 3xl:mb-9 text-xs 2xl:text-sm 3xl:text-lg">
           <h3 className="font-bold uppercase tracking-widest text-white/40">
             Recent Messages
           </h3>
@@ -812,7 +812,7 @@ const Sidebar = ({
 
             <div className=" flex-1 min-w-0">
               <p
-                className={`sm:font-semibold truncate text-base 3xl:text-xl ${
+                className={`sm:font-semibold truncate text-sm 2xl:text-base 3xl:text-xl ${
                   selectedUser?.id === userCoversation?.id
                     ? "text-[#574CD6]"
                     : "text-white"
@@ -820,7 +820,7 @@ const Sidebar = ({
               >
                 {userCoversation?.name}
               </p>
-              <div className="flex gap-3 justify-between items-center text-sm xl:text-base 3xl:text-xl 2xl:mt-2 3xl:mt-3">
+              <div className="flex gap-3 justify-between items-center text-xs xl:text-sm 3xl:text-lg 2xl:mt-2 3xl:mt-3">
                 <p
                   className={`truncate ${
                     selectedUser?.id === userCoversation?.id
@@ -831,7 +831,7 @@ const Sidebar = ({
                   {userCoversation?.lastMessage || "Tap to chat"}
                 </p>
                 {userCoversation?.lastMessageCreatedAt && (
-                  <p className="opacity-70 ml-2 shrink-0 text-xs xl:text-sm">
+                  <p className="opacity-70 ml-2 shrink-0 text-xs 2xl:text-sm 3xl:text-lg">
                     {getDate(userCoversation?.lastMessageCreatedAt)}
                   </p>
                 )}

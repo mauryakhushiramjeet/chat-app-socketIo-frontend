@@ -1,57 +1,226 @@
-import React, { useEffect, useRef } from "react";
-import { FaCheck, FaRegSmile } from "react-icons/fa";
-import { RxCross2 } from "react-icons/rx"; // Using RxCross2 for a clean thin cross
+import React, { useEffect, useRef, useState } from "react";
+import { FaCheck } from "react-icons/fa";
+import { RxCross2, RxCross1 } from "react-icons/rx";
+import { RiVideoFill } from "react-icons/ri";
+import { AiOutlineFile } from "react-icons/ai";
+import { SlPicture } from "react-icons/sl";
+import { FiImage } from "react-icons/fi";
+import { ImAttachment } from "react-icons/im";
+import { LuSmilePlus } from "react-icons/lu";
+import Picker from "emoji-picker-react";
+import { useDispatch } from "react-redux";
+import { updateMessageFile } from "../store/actions/messageActions";
 
 const EditMessageArea = ({
   editedMessage,
   setEditedMessage,
   onCancel,
   onSave,
+  setEditMessageId,
+  editMessageId,
+  logedInUser,
+  socket,
+  selectedUser,
 }) => {
   const textAreaRef = useRef(null);
+  const [file, setFile] = useState([]);
+  const [fileLimitError, setFileLimitError] = useState(false);
+  const [showImozi, setShowImozi] = useState(false);
+  const [deletedFileId, setDeletedFileId] = useState([]);
+  const [newAddedFiles, setNewAddedFiles] = useState([]);
+
+  const imoziPickerRef = useRef(null);
+  const mediaRef = useRef(null);
+  const fileRef = useRef(null);
+  const dispatch = useDispatch();
   useEffect(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = "auto";
       textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
     }
+    if (editedMessage?.file?.length > 0) {
+      setFile(editedMessage?.file);
+    }
   }, [editedMessage]);
+
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (
+        imoziPickerRef.current &&
+        !imoziPickerRef.current.contains(e.target)
+      ) {
+        setShowImozi(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  const handleFiles = (e) => {
+    const arrayFile = Array.from(e.target.files);
+    if (file.length + arrayFile.length > 10) {
+      setFileLimitError(true);
+      return;
+    }
+    setFile((prev) => [...prev, ...arrayFile]);
+    setNewAddedFiles((prev) => [...prev, e.target?.files[0]]);
+  };
+  console.log(newAddedFiles);
+  console.log(deletedFileId);
+  const sendEditMessage = () => {
+    // socket.emit("editMessage", {
+    //   messageId: editMessageId,
+    //   senderId: logedInUser?.id,
+    //   receiverId: selectedUser?.id,
+    //   newText: editedMessage,
+    //   type: selectedUser?.type,
+    //   file: file?.length > 0 ? file : null,
+    // });
+    const formData = new FormData();
+    formData.append("messageId", editMessageId);
+    formData.append("senderId", logedInUser?.id);
+    formData.append("receiverId", selectedUser?.id);
+    formData.append("newText", editedMessage?.editText);
+    formData.append("type", selectedUser?.type);
+    for (let i = 0; i < newAddedFiles.length; i++) {
+      formData.append("file", newAddedFiles[i]);
+    }
+    dispatch(updateMessageFile(formData));
+    setEditMessageId(null);
+    setEditMessageId("");
+  };
+  console.log(file);
   return (
-    <div className="w-full border border-gray-200 rounded-xl shadow-sm bg-white">
-      {/* Text Area Section */}
-      <textarea
-        ref={textAreaRef}
-        value={editedMessage}
-        onChange={(e) => {
-          setEditedMessage(e.target.value);
-        }}
-        className="w-full  max-h-[300px] py-4 px-6 bg-white text-gray-700 outline-none resize-none text-sm custom-scrollbar"
-        placeholder="Edit your message..."
-        autoFocus
-      />
+    <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden flex flex-col transition-all">
+      {fileLimitError && (
+        <div className="px-4 py-2 text-xs font-semibold flex items-center justify-between bg-red-100 text-red-700">
+          <p>Up to 10 files can't be uploaded at a time</p>
+          <button onClick={() => setFileLimitError(false)}>
+            <RxCross1 />
+          </button>
+        </div>
+      )}
 
-      {/* Action Footer Section */}
-      <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t border-gray-100">
-        {/* Left Side: Emoji */}
-        <button className="p-2 text-gray-500 hover:text-[#574CD6] transition-colors">
-          <FaRegSmile size={18} />
-        </button>
+      <div className="max-h-[150px] overflow-y-auto p-3 hide-scrollbar">
+        <textarea
+          ref={textAreaRef}
+          value={editedMessage?.editText}
+          onChange={(e) => setEditedMessage(e.target.value)}
+          className="w-full bg-transparent text-gray-700 outline-none resize-none text-sm min-h-6 sm:min-h-[45px] block"
+          placeholder="Edit your message..."
+          autoFocus
+        />
 
-        {/* Right Side: Cancel and Save */}
+        {file?.length > 0 && (
+          <div className="flex gap-2 flex-wrap mt-1">
+            {file.map((f, index) => (
+              <div
+                key={index}
+                className="relative flex items-center gap-2 p-2 bg-gray-50 border border-gray-100 rounded-xl w-full xs:w-64 group shadow-sm"
+              >
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-50 text-[#574CD6] shrink-0">
+                  {f?.fileType?.startsWith("image/") ||
+                  f?.type?.startsWith("image/") ? (
+                    <SlPicture size={16} />
+                  ) : f?.fileType?.startsWith("video/") ||
+                    f?.type?.startsWith("video/") ? (
+                    <RiVideoFill size={16} />
+                  ) : (
+                    <AiOutlineFile size={16} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-700 truncate">
+                    {f.name || f.fileName}
+                  </p>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-tighter">
+                    Ready to update
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setFile((prev) => prev.filter((_, i) => i !== index));
+                    if (f?.id) {
+                      setDeletedFileId((prev) => [...prev, f?.id]);
+                    }
+                  }}
+                  className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                >
+                  <RxCross1 size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50/80 border-t border-gray-100 relative">
+        <div className="flex items-center gap-2 text-gray-400">
+          <div className="relative">
+            {showImozi && (
+              <div
+                ref={imoziPickerRef}
+                className="absolute bottom-12 left-0 z-50 shadow-2xl"
+              >
+                <Picker
+                  onEmojiClick={(emoji) => {
+                    setEditedMessage(editedMessage?.editText + emoji.emoji);
+                    setShowImozi(false);
+                  }}
+                  height={350}
+                  width={280}
+                />
+              </div>
+            )}
+            <button
+              onClick={() => setShowImozi(true)}
+              className="p-2 hover:text-[#574CD6] transition-colors"
+            >
+              <LuSmilePlus size={20} />
+            </button>
+          </div>
+
+          <button
+            onClick={() => mediaRef.current.click()}
+            className="p-2 hover:text-[#574CD6] transition-colors"
+          >
+            <FiImage size={19} />
+          </button>
+          <input
+            type="file"
+            ref={mediaRef}
+            onChange={handleFiles}
+            className="hidden"
+            accept="image/*,video/*"
+            multiple
+          />
+
+          <button
+            onClick={() => fileRef.current.click()}
+            className="p-2 hover:text-[#574CD6] transition-colors"
+          >
+            <ImAttachment size={17} />
+          </button>
+          <input
+            type="file"
+            ref={fileRef}
+            onChange={handleFiles}
+            className="hidden"
+            multiple
+          />
+        </div>
+
         <div className="flex items-center gap-2">
-          {/* Cross / Cancel Button */}
           <button
             onClick={onCancel}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-all"
-            title="Cancel"
           >
             <RxCross2 size={20} />
           </button>
 
-          {/* Check / Save Button */}
           <button
-            onClick={onSave}
-            className="p-2 bg-[#574CD6] text-white rounded-lg hover:bg-[#4633A6] shadow-md transition-all flex items-center justify-center"
-            title="Save changes"
+            onClick={() => sendEditMessage()}
+            className="p-2 bg-[#574CD6] text-white rounded-lg hover:bg-[#4633A6] shadow-md transition-all flex items-center justify-center active:scale-95"
           >
             <FaCheck size={14} />
           </button>

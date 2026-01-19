@@ -35,7 +35,7 @@ const ChatPage = () => {
   const [showImozi, setShowImozi] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [editMessageId, setEditMessageId] = useState(null);
-  const [editedMessage, setEditedMesage] = useState("");
+  const [editedMessage, setEditedMesage] = useState(null);
   const [allReceiverMessages, setAllReceiverMessages] = useState([]);
   const [privateMessages, setPrivateMessages] = useState([]);
   const [groupMessages, setGroupMessages] = useState([]);
@@ -43,6 +43,7 @@ const ChatPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showUserChat, setShowUserChat] = useState(false);
+  const [replyTomessage, setReplyToMessage] = useState(null);
 
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
@@ -97,17 +98,18 @@ const ChatPage = () => {
     newSocket.on("status:send", ({ clientMessageId }) => {
       setPrivateMessages((prev) =>
         prev.map((msg) =>
-          msg.clientMessageId === clientMessageId
+          msg?.clientMessageId === clientMessageId
             ? { ...msg, status: "Send" }
             : msg
         )
       );
     });
-    newSocket.on("editMessage", ({ messageId, newText, chatType }) => {
+    newSocket.on("editMessage", ({ messageId, newText,files, chatType }) => {
+// console.log(upload)
       if (chatType === "chat") {
         setPrivateMessages((prev) =>
           prev.map((msg) =>
-            msg.id === messageId ? { ...msg, text: newText } : msg
+            msg.id === messageId ? { ...msg, text: newText,file: files.length > 0 ? files : [], } : msg
           )
         );
       } else {
@@ -120,50 +122,54 @@ const ChatPage = () => {
 
       setEditMessageId(null);
     });
-    newSocket.on("newMessage", ({ clientMessageId, response, files }) => {
-      setSelectedFiles([]);
-
-      const currentSelectedUser = selectedUserRef.current;
-      // console.log(files);
-      setPrivateMessages((prev) => {
-        const updated = prev.map((msg) =>
-          msg.clientMessageId === clientMessageId
-            ? {
+    newSocket.on(
+      "newMessage",
+      ({ clientMessageId, response, files, replyMessage }) => {
+        setSelectedFiles([]);
+        // console.log(replyMessage, "new messageessssssssssss");
+        const currentSelectedUser = selectedUserRef.current;
+        // console.log(files);
+        setPrivateMessages((prev) => {
+          const updated = prev.map((msg) =>
+            msg?.clientMessageId === clientMessageId
+              ? {
+                  ...response,
+                  status: "Send",
+                  file: files.length > 0 ? files : [],
+                  replyMessage: replyMessage ? replyMessage : null,
+                }
+              : msg
+          );
+          const exist = updated.some((m) => m?.id === response.id);
+          // console.log(exist, "exists");
+          if (!exist) {
+            return [
+              ...updated,
+              {
                 ...response,
                 status: "Send",
                 file: files.length > 0 ? files : [],
-              }
-            : msg
+                replyMessage: replyMessage ? replyMessage : null,
+              },
+            ];
+          }
+
+          return updated;
+        });
+        const currentOnlineUser = onlineUserRef.current;
+        const recieverSocketId = currentOnlineUser.includes(
+          String(logedInUser?.id)
         );
 
-        const exist = updated.some((m) => m.id === response.id);
-        // console.log(exist, "exists");
-        if (!exist) {
-          return [
-            ...updated,
-            {
-              ...response,
-              status: "Send",
-              file: files.length > 0 ? files : [],
-            },
-          ];
-        }
-
-        return updated;
-      });
-      const currentOnlineUser = onlineUserRef.current;
-      const recieverSocketId = currentOnlineUser.includes(
-        String(logedInUser?.id)
-      );
-
-      if (response?.receiverId === logedInUser?.id && recieverSocketId) {
-        if (currentSelectedUser?.id === response?.senderId) {
-          newSocket.emit("status:Read", { messageId: response?.id });
-        } else {
-          newSocket.emit("status:delivered", { messageId: response?.id });
+        if (response?.receiverId === logedInUser?.id && recieverSocketId) {
+          if (currentSelectedUser?.id === response?.senderId) {
+            newSocket.emit("status:Read", { messageId: response?.id });
+          } else {
+            newSocket.emit("status:delivered", { messageId: response?.id });
+          }
         }
       }
-    });
+    );
     newSocket.on("status:Read", ({ messageId }) => {
       setPrivateMessages((prev) =>
         prev.map((msg) =>
@@ -242,13 +248,14 @@ const ChatPage = () => {
       setIsModelOpen(false);
     });
     newSocket.on("receiveGropMessage", (data) => {
-      // console.log(data, "group messages ");
+      console.log(data, "group messages ");
+      setReplyToMessage(null);
       setGroupMessages((prevMessages) => {
         const currentSelectedUser = selectedUserRef.current;
         if (currentSelectedUser?.id !== data?.groupId) return;
 
         const exists = prevMessages.some(
-          (msg) => msg.id === data.lastMessageId
+          (msg) => msg?.id === data.lastMessageId
         );
         if (exists) return prevMessages;
 
@@ -263,6 +270,7 @@ const ChatPage = () => {
             status: "Delivered",
             userId: data.sender.id,
             file: data?.file.length > 0 ? data?.file : null,
+            replyMessage: data?.replyMessage ? data.replyMessage : null,
           },
         ];
       });
@@ -291,9 +299,9 @@ const ChatPage = () => {
     if (!messages || messages.length === 0) return;
     const unDeliveredMessages = messages.filter(
       (msg) =>
-        msg.receiverId === logedInUser.id &&
+        msg?.receiverId === logedInUser.id &&
         msg?.status === "Send" &&
-        msg.senderId !== selectedUser?.id
+        msg?.senderId !== selectedUser?.id
     );
     if (
       onlineUsers.includes(String(logedInUser.id)) &&
@@ -372,7 +380,7 @@ const ChatPage = () => {
       }, 1000);
     }
   };
-
+  // console.log(privateMessages, "private message sis here");
   useEffect(() => {
     selectedUserRef.current = selectedUser;
     setEditMessageId(null);
@@ -381,6 +389,7 @@ const ChatPage = () => {
     setSelectedFiles([]);
   }, [selectedUser]);
 
+  console.log(replyTomessage, "reply to message id");
   const handleSendMessage = () => {
     console.log("click message button ");
     if (message.trim() === "" && selectedFiles.length === 0) return;
@@ -398,6 +407,7 @@ const ChatPage = () => {
       formData.append("groupId", groupId);
       formData.append("message", message);
       formData.append("messageSenderId", logedInUser?.id);
+      formData.append("replyToMessageId", replyTomessage?.id);
       for (let i = 0; i < selectedFiles.length; i++) {
         formData.append("file", selectedFiles[i]);
       }
@@ -455,16 +465,16 @@ const ChatPage = () => {
       for (let i = 0; i < selectedFiles.length; i++) {
         formData.append("file", selectedFiles[i]);
       }
-
+      formData.append("replyToMessageId", replyTomessage?.id);
       dispatch(sendMessage(formData))
         .unwrap()
         .then((res) => {
           // // console.log(res);
           if (res.success) {
-            console.log(res, "after success");
-            console.log("before success oading is", loading);
+            // console.log(res, "after success");
+            // console.log("before success oading is", loading);
             setLoading(false);
-            console.log("after success oading is", loading);
+            // console.log("after success oading is", loading);
           }
         })
         .catch((error) => {
@@ -472,6 +482,7 @@ const ChatPage = () => {
           setLoading(false);
         });
       setMessage("");
+      setReplyToMessage(null);
     }
     socket.emit("stopTyping", {
       senderId: logedInUser?.id,
@@ -533,7 +544,7 @@ const ChatPage = () => {
   useEffect(() => {
     if (messageStore?.messages.length === 0) return;
     setPrivateMessages(messageStore?.messages);
-  }, [messageStore]);
+  }, [messageStore?.messages]);
 
   useEffect(() => {
     if (messageRef.current)
@@ -606,22 +617,11 @@ const ChatPage = () => {
         return null;
     }
   };
-  const handleMessageEdit = (editText, editMessageId) => {
+  const handleMessageEdit = (editText, editMessageId, file) => {
     // console.log(editText, editMessageId);
     setEditMessageId(editMessageId);
-    setEditedMesage(editText);
+    setEditedMesage({ editText, file });
     // setMessage(editText);
-  };
-  const sendEditMessage = () => {
-    socket.emit("editMessage", {
-      messageId: editMessageId,
-      senderId: logedInUser?.id,
-      receiverId: selectedUser?.id,
-      newText: editedMessage,
-      type: selectedUser?.type,
-    });
-    setEditMessageId(null);
-    setEditMessageId("");
   };
 
   return (
@@ -700,15 +700,17 @@ const ChatPage = () => {
 
                 <div>
                   {/* 1. User/Group Name */}
-                  <div className="font-medium sm:font-bold text-gray-800 text-sm xs:text-base 2xl:text-xl 3xl:text-2xl leading-tight">
+                  <div className="font-medium 2xl:font-bold text-gray-800 text-sm xs:text-sm 2xl:text-xl 3xl:text-2xl leading-tight">
                     {selectedUser.name}
                   </div>
 
                   {/* 2. Secondary Status Line */}
-                  <div className="flex gap-1 items-center text-[13px] xs:text-sm 3xl:text-xl">
+                  <div className="flex gap-1 items-center text-xs 2xl:text-sm 3xl:text-xl">
                     <div className="flex items-center gap-1.5 ">
                       {selectedUser.type === "group" && (
-                        <div className={`hidden xs:flex items-center  font-medium text-gray-500`}>
+                        <div
+                          className={`hidden xs:flex items-center  font-medium text-gray-500`}
+                        >
                           <span>{groupMembers.length} members</span>
                           <span className="mx-1">•</span>
                           <span className="text-[#574CD6] text-sm 2xl:text-base 3xl:text-lg">
@@ -771,10 +773,10 @@ const ChatPage = () => {
                   selectedUser?.type === "group"
                     ? Number(msg.groupId) ===
                       Number(selectedUser.id.split("-")[1])
-                    : (msg.senderId === logedInUser?.id &&
-                        msg.receiverId === selectedUser?.id) ||
-                      (msg.senderId === selectedUser?.id &&
-                        msg.receiverId === logedInUser?.id);
+                    : (msg?.senderId === logedInUser?.id &&
+                        msg?.receiverId === selectedUser?.id) ||
+                      (msg?.senderId === selectedUser?.id &&
+                        msg?.receiverId === logedInUser?.id);
 
                 if (!isChatMessage || msg?.deletedByMeId === logedInUser?.id)
                   return null;
@@ -832,11 +834,16 @@ const ChatPage = () => {
                           <EditMessageArea
                             editedMessage={editedMessage}
                             setEditedMessage={setEditedMesage}
+                            setEditMessageId={setDeleteMessageId}
+                            editMessageId={editMessageId}
+                            logedInUser={logedInUser}
+                            selectedUser={selectedUser}
+                            socket={socket}
                             onCancel={() => {
                               setEditedMesage("");
                               setEditMessageId(null);
                             }}
-                            onSave={() => sendEditMessage()}
+                            // onSave={() => sendEditMessage()}
                           />
                         ) : (
                           <div
@@ -866,7 +873,11 @@ const ChatPage = () => {
                               </button>
                               <button
                                 onClick={() =>
-                                  handleMessageEdit(msg?.text, msg?.id)
+                                  handleMessageEdit(
+                                    msg?.text,
+                                    msg?.id,
+                                    msg?.file
+                                  )
                                 }
                                 className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors"
                               >
@@ -883,21 +894,76 @@ const ChatPage = () => {
                                   <RiDeleteBinLine size={16} />
                                 </button>
                               )}
-                              <button className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors">
+                              <button
+                                onClick={() => setReplyToMessage(msg)}
+                                className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors"
+                              >
                                 <HiArrowUturnLeft size={16} />
                               </button>
                             </div>
                             <div
                               className={`
-                                ${msg.text === null ? "hidden" : "block"}
-                             flex flex-col gap-2 `}
+    ${msg.text === null ? "hidden" : "block"}
+    flex flex-col 3xl:gap-2 
+  `}
                             >
-                              <p className="text-sm 2xl:text-lg 3xl:text-[22px] leading-loose">
-                                {" "}
-                                {msg.text === null
-                                  ? "This message was deleted"
-                                  : msg.text}
+                              {msg?.replyMessage?.id && (
+                                /* The Reply Container */
+                                <div
+                                  className={`
+  mb-2 p-2 rounded-r-lg border-l-4 text-xs
+  ${
+    isMe
+      ? "bg-black/15 border-white/60 text-white"
+      : "bg-black/5 border-[#574CD6]/40 text-gray-700"
+  }
+`}
+                                >
+                                  <div className="flex items-center justify-between mb-1 gap-3">
+                                    <p
+                                      className={`font-bold text-[11px] ${
+                                        isMe ? "text-white" : "text-[#574CD6]"
+                                      }`}
+                                    >
+                                      {selectedUser?.name}
+                                    </p>
+                                    <p
+                                      className={`text-[10px] ${
+                                        isMe ? "text-white/60" : "text-gray-500"
+                                      }`}
+                                    >
+                                      {getDate(msg?.replyMessage?.createdAt)}
+                                    </p>
+                                  </div>
+
+                                  {/* Reply Content */}
+                                  <div className="truncate">
+                                    {msg?.replyMessage?.text?.trim() !== "" && (
+                                      <p
+                                        className={`overflow-hidden text-ellipsis line-clamp-1 italic ${
+                                          isMe
+                                            ? "text-white/80"
+                                            : "text-gray-600"
+                                        }`}
+                                      >
+                                        {msg?.replyMessage?.text}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Main Message Text */}
+                              <p className="text-xs 2xl:text-lg 3xl:text-[22px] leading-relaxed">
+                                {msg.text === null ? (
+                                  <span className="italic opacity-70">
+                                    This message was deleted
+                                  </span>
+                                ) : (
+                                  msg.text
+                                )}
                               </p>
+
                               <FilesView msg={msg} />
                             </div>
 
@@ -909,7 +975,7 @@ const ChatPage = () => {
                                   : "text-gray-500 justify-start"
                               }`}
                             >
-                              <span className="text-[10px] sm:text-xs 2xl:text-sm 3xl:text-lg">
+                              <span className="text-[10px] 2xl:text-sm 3xl:text-lg">
                                 {getDate(msg?.createdAt)}
                               </span>
 
@@ -944,6 +1010,8 @@ const ChatPage = () => {
                 selectedFiles={selectedFiles}
                 setSelectedFiles={setSelectedFiles}
                 loading={loading}
+                replyTomessage={replyTomessage}
+                setReplyToMessage={setReplyToMessage}
               />
             </div>
           </>
