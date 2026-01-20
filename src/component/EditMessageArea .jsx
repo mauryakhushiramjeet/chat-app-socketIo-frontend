@@ -24,14 +24,15 @@ const EditMessageArea = ({
 }) => {
   const textAreaRef = useRef(null);
   const [file, setFile] = useState([]);
-  const [fileLimitError, setFileLimitError] = useState(false);
+  const [fileLimitError, setFileLimitError] = useState("");
   const [showImozi, setShowImozi] = useState(false);
   const [deletedFileId, setDeletedFileId] = useState([]);
   const [newAddedFiles, setNewAddedFiles] = useState([]);
-
+  const [newEditedText, setNewEditedText] = useState("");
   const imoziPickerRef = useRef(null);
   const mediaRef = useRef(null);
   const fileRef = useRef(null);
+  const fileErrorRef = useRef(null);
   const dispatch = useDispatch();
   useEffect(() => {
     if (textAreaRef.current) {
@@ -40,6 +41,10 @@ const EditMessageArea = ({
     }
     if (editedMessage?.file?.length > 0) {
       setFile(editedMessage?.file);
+    }
+    if (editedMessage?.editText) {
+      console.log("run this for message", editedMessage?.editText);
+      setNewEditedText(editedMessage?.editText);
     }
   }, [editedMessage]);
 
@@ -59,13 +64,14 @@ const EditMessageArea = ({
   const handleFiles = (e) => {
     const arrayFile = Array.from(e.target.files);
     if (file.length + arrayFile.length > 10) {
-      setFileLimitError(true);
+      setFileLimitError("Up to 10 files can't be uploaded at a time");
       return;
     }
     setFile((prev) => [...prev, ...arrayFile]);
     setNewAddedFiles((prev) => [...prev, e.target?.files[0]]);
   };
-  console.log(newAddedFiles);
+  console.log(editedMessage);
+  // console.log(deletedFileId);
   console.log(deletedFileId);
   const sendEditMessage = () => {
     // socket.emit("editMessage", {
@@ -76,26 +82,57 @@ const EditMessageArea = ({
     //   type: selectedUser?.type,
     //   file: file?.length > 0 ? file : null,
     // });
+    console.log(deletedFileId);
+    console.log(newEditedText);
     const formData = new FormData();
     formData.append("messageId", editMessageId);
     formData.append("senderId", logedInUser?.id);
     formData.append("receiverId", selectedUser?.id);
-    formData.append("newText", editedMessage?.editText);
+    const finalText =
+      newEditedText !== "" ? newEditedText : editedMessage?.editText;
+    console.log(finalText, "final");
+    formData.append("newText", finalText);
+
+    for (let i = 0; i < deletedFileId?.length; i++) {
+      formData.append("deletedFileId", deletedFileId[i]);
+      console.log("in loop", i, deletedFileId[i]);
+    }
+
     formData.append("type", selectedUser?.type);
+    if (selectedUser?.type === "group") {
+      const groupId = Number(selectedUser.id.split("-")[1]);
+      console.log(groupId, "group id is");
+      formData.append("groupId", groupId);
+    }
+
     for (let i = 0; i < newAddedFiles.length; i++) {
       formData.append("file", newAddedFiles[i]);
+    }
+    console.log(finalText, file, "check");
+    if (newEditedText.trim() === "" && file?.length === 0) {
+      setFileLimitError("Message can't be empty");
+      return;
     }
     dispatch(updateMessageFile(formData));
     setEditMessageId(null);
     setEditMessageId("");
   };
-  console.log(file);
+  useEffect(() => {
+    if (fileErrorRef?.current) {
+      setTimeout(() => {
+        setFileLimitError(false);
+      }, [3000]);
+    }
+  }, [fileLimitError]);
   return (
     <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden flex flex-col transition-all">
-      {fileLimitError && (
-        <div className="px-4 py-2 text-xs font-semibold flex items-center justify-between bg-red-100 text-red-700">
-          <p>Up to 10 files can't be uploaded at a time</p>
-          <button onClick={() => setFileLimitError(false)}>
+      {fileLimitError && fileLimitError.trim() !== "" && (
+        <div
+          ref={fileErrorRef}
+          className="px-4 py-2 text-xs font-semibold flex items-center justify-between bg-red-100 text-red-700"
+        >
+          <p>{fileLimitError}</p>
+          <button onClick={() => setFileLimitError("")}>
             <RxCross1 />
           </button>
         </div>
@@ -104,8 +141,8 @@ const EditMessageArea = ({
       <div className="max-h-[150px] overflow-y-auto p-3 hide-scrollbar">
         <textarea
           ref={textAreaRef}
-          value={editedMessage?.editText}
-          onChange={(e) => setEditedMessage(e.target.value)}
+          value={newEditedText}
+          onChange={(e) => setNewEditedText(e.target.value)}
           className="w-full bg-transparent text-gray-700 outline-none resize-none text-sm min-h-6 sm:min-h-[45px] block"
           placeholder="Edit your message..."
           autoFocus
@@ -116,7 +153,7 @@ const EditMessageArea = ({
             {file.map((f, index) => (
               <div
                 key={index}
-                className="relative flex items-center gap-2 p-2 bg-gray-50 border border-gray-100 rounded-xl w-full xs:w-64 group shadow-sm"
+                className="relative flex items-center gap-2 p-2 bg-gray-50 border border-gray-100 rounded-xl w-full max-w-[250px] sm:max-w-[400px] group shadow-sm"
               >
                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-50 text-[#574CD6] shrink-0">
                   {f?.fileType?.startsWith("image/") ||

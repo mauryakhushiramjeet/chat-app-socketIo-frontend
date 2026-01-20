@@ -66,9 +66,9 @@ const FilesView = ({ msg }) => {
   };
   // console.log(viewImage, "viewimage", currentIndex);
   const chatFiles = msg?.file || [];
-
-  const mediaFiles = chatFiles.filter(
-    (f) => f.fileType.startsWith("image/") || f.fileType.startsWith("video/")
+  // console.log(chatFiles, "chat fies");
+  const mediaFiles = chatFiles?.filter(
+    (f) => f.fileType?.startsWith("image/") || f.fileType?.startsWith("video/"),
   );
   // console.log(mediaFiles.length, "media file");
   // console.log(viewFiles, "view files");
@@ -97,6 +97,7 @@ const FilesView = ({ msg }) => {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
   // console.log(viewImage, "view");
+  // console.log(viewFiles);
   return (
     <div className="flex flex-wrap gap-2 ">
       {viewImage !== null && (
@@ -196,7 +197,7 @@ const FilesView = ({ msg }) => {
                   className="borde w-full xs:max-w-28 2xl:max-w-[200px]"
                 >
                   {" "}
-                  {file.fileType.startsWith("image/") && (
+                  {file?.fileType?.startsWith("image/") && (
                     <img
                       src={file.filePath}
                       alt="thumbnail"
@@ -212,7 +213,7 @@ const FilesView = ({ msg }) => {
                       }}
                     />
                   )}
-                  {file.fileType.startsWith("video/") && (
+                  {file?.fileType?.startsWith("video/") && (
                     <div className="w-full h-[250px] xs:h-[100px] lg:h-full relative">
                       <video
                         key={file.id}
@@ -258,7 +259,7 @@ const FilesView = ({ msg }) => {
       )}
 
       {/* chat secyion */}
-      {chatFiles.length > 0 &&
+      {chatFiles.length !== 0 &&
         (chatFiles || []).map((file, index) => (
           <div
             className={`${msg?.text === null ? "hidden" : "block"} ${
@@ -280,14 +281,14 @@ const FilesView = ({ msg }) => {
               className={`bg-[#5042C2]/50 flex items-center justify-center absolute  ${
                 index === 3 &&
                 mediaFiles?.length > 4 &&
-                (file.fileType.startsWith("image/") ||
-                  file.fileType.startsWith("video/"))
+                (file?.fileType?.startsWith("image/") ||
+                  file?.fileType?.startsWith("video/"))
                   ? "z-10 w-full h-full"
                   : "opacity-0"
               }`}
             >
-              <p className="text-white font-bold text-5xl">
-                {Number(mediaFiles?.length) - 4 > 4 ? (
+              <p className="text-white font-bold text-2xl xl:text-3xl 2xl:text-5xl">
+                {Number(mediaFiles?.length) + 1 - 4 > 0 ? (
                   <p>
                     {Number(mediaFiles?.length) - 4}
                     <span>+</span>
@@ -295,7 +296,7 @@ const FilesView = ({ msg }) => {
                 ) : null}{" "}
               </p>
             </div>
-            {file.fileType.startsWith("image/") && (
+            {file?.fileType?.startsWith("image/") && (
               <div className="h-full w-full cursor-pointer border border-gray-300/50 rounded-lg  bg-[#786FDD] overflow-hidden  max-h-[200px] ">
                 <img
                   src={file?.filePath}
@@ -304,14 +305,14 @@ const FilesView = ({ msg }) => {
                   onClick={() => {
                     setViewFiles(mediaFiles);
                     setCurrentIndex(
-                      mediaFiles.findIndex((f) => f.id === file.id)
+                      mediaFiles.findIndex((f) => f.id === file.id),
                     );
                     setViewImage(file);
                   }}
                 />
               </div>
             )}
-            {file.fileType.startsWith("video/") && (
+            {file?.fileType?.startsWith("video/") && (
               <div className="max-h-[180px] md:max-h-[200px] w-full relative border border-gray-300/50 rounded-lg overflow- relative ">
                 <video
                   ref={(el) => (videoRefs.current[file?.id] = el)}
@@ -325,7 +326,7 @@ const FilesView = ({ msg }) => {
                     setViewFiles(chatFiles);
                     setViewImage(mediaFiles);
                     setCurrentIndex(
-                      mediaFiles.findIndex((f) => f.id === file.id)
+                      mediaFiles.findIndex((f) => f.id === file.id),
                     );
                   }}
                 />
@@ -334,7 +335,7 @@ const FilesView = ({ msg }) => {
                     setViewFiles(chatFiles);
                     setViewImage(mediaFiles);
                     setCurrentIndex(
-                      mediaFiles.findIndex((f) => f.id === file.id)
+                      mediaFiles.findIndex((f) => f.id === file.id),
                     );
                   }}
                   className="block xs:hidden absolute left-1/2 top-1/2 text-white text-xl cursor-pointer"
@@ -344,8 +345,8 @@ const FilesView = ({ msg }) => {
               </div>
             )}
 
-            {!file.fileType.startsWith("image/") &&
-              !file.fileType.startsWith("video/") && (
+            {!file?.fileType?.startsWith("image/") &&
+              !file?.fileType?.startsWith("video/") && (
                 <div
                   onClick={() => handleFileClick(file)}
                   // onClick={()=>window.open(file?.filePath, "_blank")}

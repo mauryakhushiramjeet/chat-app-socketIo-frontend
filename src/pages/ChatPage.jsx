@@ -44,7 +44,7 @@ const ChatPage = () => {
   const [loading, setLoading] = useState(false);
   const [showUserChat, setShowUserChat] = useState(false);
   const [replyTomessage, setReplyToMessage] = useState(null);
-
+  const [isAtBottom, setIsBottom] = useState(false);
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
   const deleteMessageIdRef = React.useRef(null);
@@ -54,7 +54,9 @@ const ChatPage = () => {
   const messageStore = useSelector((store) => store.messages);
   const receiverMessageStore = useSelector((store) => store.getMyMessages);
   const groupMessageStore = useSelector((store) => store.groupMessages);
-  const messageRef = useRef(null);
+  const messageEndRef = useRef(null);
+  const chatTopRef = useRef(null);
+  const firstLoadRef = useRef(true);
   useEffect(() => {
     if (!logedInUser) return;
     const newSocket = io("http://localhost:8085");
@@ -67,12 +69,12 @@ const ChatPage = () => {
           if (!userIdAlredy) {
             return [...prev, id];
           } else return prev;
-        })
+        }),
       );
     });
     newSocket.on("user-disconnected", (userId) => {
       setOnlineUsers((prev) =>
-        prev.filter((id) => String(id) !== String(userId))
+        prev.filter((id) => String(id) !== String(userId)),
       );
     });
     newSocket.on("editMessage:error", ({ message }) => {
@@ -100,23 +102,42 @@ const ChatPage = () => {
         prev.map((msg) =>
           msg?.clientMessageId === clientMessageId
             ? { ...msg, status: "Send" }
-            : msg
-        )
+            : msg,
+        ),
       );
     });
-    newSocket.on("editMessage", ({ messageId, newText,files, chatType }) => {
-// console.log(upload)
+    newSocket.on("editMessage", ({ messageId, newText, files, chatType }) => {
+      // console.log(upload)
+      console.log(messageId, newText, files, chatType, "eit message come");
       if (chatType === "chat") {
         setPrivateMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === messageId ? { ...msg, text: newText,file: files.length > 0 ? files : [], } : msg
-          )
+          prev.map((msg) => {
+            console.log(
+              "msgId is",
+              msg?.id,
+              "and edited message id is",
+              messageId,
+              "which is",
+              Number(msg.id) === Number(messageId),
+            );
+            if (Number(msg.id) === Number(messageId)) {
+              return {
+                ...msg,
+                text: newText,
+                file: files.length !== 0 ? files : [],
+              };
+            } else {
+              return msg;
+            }
+          }),
         );
       } else {
         setGroupMessages((prev) =>
           prev.map((msg) =>
-            msg.id === messageId ? { ...msg, text: newText } : msg
-          )
+            Number(msg.id) === Number(messageId)
+              ? { ...msg, text: newText, file: files.length !== 0 ? files : [] }
+              : msg,
+          ),
         );
       }
 
@@ -126,7 +147,7 @@ const ChatPage = () => {
       "newMessage",
       ({ clientMessageId, response, files, replyMessage }) => {
         setSelectedFiles([]);
-        // console.log(replyMessage, "new messageessssssssssss");
+        console.log(replyMessage, "new messageessssssssssss");
         const currentSelectedUser = selectedUserRef.current;
         // console.log(files);
         setPrivateMessages((prev) => {
@@ -138,7 +159,7 @@ const ChatPage = () => {
                   file: files.length > 0 ? files : [],
                   replyMessage: replyMessage ? replyMessage : null,
                 }
-              : msg
+              : msg,
           );
           const exist = updated.some((m) => m?.id === response.id);
           // console.log(exist, "exists");
@@ -158,7 +179,7 @@ const ChatPage = () => {
         });
         const currentOnlineUser = onlineUserRef.current;
         const recieverSocketId = currentOnlineUser.includes(
-          String(logedInUser?.id)
+          String(logedInUser?.id),
         );
 
         if (response?.receiverId === logedInUser?.id && recieverSocketId) {
@@ -168,20 +189,20 @@ const ChatPage = () => {
             newSocket.emit("status:delivered", { messageId: response?.id });
           }
         }
-      }
+      },
     );
     newSocket.on("status:Read", ({ messageId }) => {
       setPrivateMessages((prev) =>
         prev.map((msg) =>
-          msg.id === messageId ? { ...msg, status: "Read" } : msg
-        )
+          msg.id === messageId ? { ...msg, status: "Read" } : msg,
+        ),
       );
     });
     newSocket.on("status:delivered", ({ messageId }) => {
       setPrivateMessages((prev) =>
         prev.map((msg) =>
-          msg.id === messageId ? { ...msg, status: "Delivered" } : msg
-        )
+          msg.id === messageId ? { ...msg, status: "Delivered" } : msg,
+        ),
       );
     });
 
@@ -220,16 +241,16 @@ const ChatPage = () => {
             prev.map((msg) =>
               msg.id === messageId
                 ? { ...msg, deletedByMeId: logedInUser?.id }
-                : msg
-            )
+                : msg,
+            ),
           );
         } else {
           setPrivateMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
                 ? { ...msg, deletedByMeId: logedInUser?.id }
-                : msg
-            )
+                : msg,
+            ),
           );
         }
       }
@@ -255,7 +276,7 @@ const ChatPage = () => {
         if (currentSelectedUser?.id !== data?.groupId) return;
 
         const exists = prevMessages.some(
-          (msg) => msg?.id === data.lastMessageId
+          (msg) => msg?.id === data.lastMessageId,
         );
         if (exists) return prevMessages;
 
@@ -301,7 +322,7 @@ const ChatPage = () => {
       (msg) =>
         msg?.receiverId === logedInUser.id &&
         msg?.status === "Send" &&
-        msg?.senderId !== selectedUser?.id
+        msg?.senderId !== selectedUser?.id,
     );
     if (
       onlineUsers.includes(String(logedInUser.id)) &&
@@ -317,7 +338,7 @@ const ChatPage = () => {
       (msg) =>
         msg?.receiverId === logedInUser?.id &&
         msg?.senderId === selectedUser?.id &&
-        (msg?.status === "Delivered" || msg?.status === "Send")
+        (msg?.status === "Delivered" || msg?.status === "Send"),
     );
     if (
       unReadedMessage.length > 0 &&
@@ -343,7 +364,7 @@ const ChatPage = () => {
       getAllMessages({
         senderId: logedInUser.id,
         receiverId: selectedUser.id,
-      })
+      }),
     );
   }, [logedInUser?.id, selectedUser?.id, dispatch]);
 
@@ -387,9 +408,10 @@ const ChatPage = () => {
     setMessage("");
     setGroupMembers([]);
     setSelectedFiles([]);
+    firstLoadRef.current = true;
   }, [selectedUser]);
 
-  console.log(replyTomessage, "reply to message id");
+  // console.log(replyTomessage, "reply to message id");
   const handleSendMessage = () => {
     console.log("click message button ");
     if (message.trim() === "" && selectedFiles.length === 0) return;
@@ -408,6 +430,7 @@ const ChatPage = () => {
       formData.append("message", message);
       formData.append("messageSenderId", logedInUser?.id);
       formData.append("replyToMessageId", replyTomessage?.id);
+      formData.append("replyMessageSenderId", replyTomessage?.userId);
       for (let i = 0; i < selectedFiles.length; i++) {
         formData.append("file", selectedFiles[i]);
       }
@@ -462,6 +485,8 @@ const ChatPage = () => {
 
       formData.append("receiverId", selectedUser?.id);
       formData.append("type", selectedUser?.type);
+      formData.append("replyMessageSenderId", replyTomessage?.senderId);
+
       for (let i = 0; i < selectedFiles.length; i++) {
         formData.append("file", selectedFiles[i]);
       }
@@ -489,6 +514,7 @@ const ChatPage = () => {
       receiverId: selectedUser?.id,
     });
   };
+  console.log(replyTomessage, "reply");
   useEffect(() => {
     if (!logedInUser?.id) return;
     if (!onlineUsers.includes(String(logedInUser?.id)) || selectedUser) return;
@@ -546,10 +572,41 @@ const ChatPage = () => {
     setPrivateMessages(messageStore?.messages);
   }, [messageStore?.messages]);
 
+  // useEffect(() => {
+  //   if (messageEndRef.current)
+  //     // messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+  // }, []);
+
+  const handleScroll = () => {
+    const el = chatTopRef?.current;
+    if (!el) return;
+    // console.log(
+    //   el.scrollHeight,
+    //   "total",
+    //   "scropll from top is",
+    //   el.scrollTop,
+    //   "main content heiht",
+    //   el.clientHeight,
+    // );
+    const atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
+    console.log(atBottom);
+    setIsBottom(atBottom);
+  };
+  // console.log(selectedUser)
   useEffect(() => {
-    if (messageRef.current)
-      messageRef.current.scrollIntoView({ behavior: "auto" });
-  }, [messages]);
+    if (!messageEndRef.current) return;
+    if (firstLoadRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: "auto" });
+
+      firstLoadRef.current = false;
+      return;
+    }
+    if (isAtBottom) {
+      console.log("run this");
+      messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isAtBottom, messages]);
+
   useEffect(() => {
     deleteMessageIdRef.current = deleteMessageId;
   }, [deleteMessageId]);
@@ -581,7 +638,7 @@ const ChatPage = () => {
         msg.deletedByMeId !==
         (selectedUser?.type === "chat"
           ? deleteMessage?.senderId
-          : deleteMessage?.userId)
+          : deleteMessage?.userId),
     );
 
     const lastMessage = messages[messages.length - 1];
@@ -618,12 +675,43 @@ const ChatPage = () => {
     }
   };
   const handleMessageEdit = (editText, editMessageId, file) => {
-    // console.log(editText, editMessageId);
+    console.log(editText, editMessageId, file, "edit message file");
     setEditMessageId(editMessageId);
     setEditedMesage({ editText, file });
     // setMessage(editText);
   };
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768) {
+        setShowUserChat(false);
+      } else {
+        setShowUserChat(true);
+      }
+    };
 
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+  console.log(groupMembers);
+  const getReplyName = (replySenderId) => {
+    console.log(replySenderId,"id")
+    if (selectedFiles?.type === "chat") {
+      if (replySenderId === logedInUser?.id) {
+        return logedInUser?.name;
+      } else {
+        return selectedFiles?.name;
+      }
+    } else {
+      const memebername = groupMembers?.find((g) => g?.id === replySenderId);
+      return memebername?.name;
+    }
+  };
+  console.log(messages);
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito relative">
       {/* Sidebar - Added a subtle border-right */}
@@ -716,7 +804,7 @@ const ChatPage = () => {
                           <span className="text-[#574CD6] text-sm 2xl:text-base 3xl:text-lg">
                             {
                               groupMembers.filter((m) =>
-                                onlineUsers.includes(String(m.id))
+                                onlineUsers.includes(String(m.id)),
                               ).length
                             }{" "}
                             online
@@ -735,7 +823,7 @@ const ChatPage = () => {
                         <span className="truncate whitespace-nowrap">
                           {groupMembers.map((member, index) => {
                             const isMemberOnline = onlineUsers.includes(
-                              String(member?.id)
+                              String(member?.id),
                             );
 
                             return (
@@ -767,7 +855,11 @@ const ChatPage = () => {
             </div>
 
             {/* Messages Area - Subtle background color change */}
-            <div className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-7">
+            <div
+              ref={chatTopRef}
+              onScroll={handleScroll}
+              className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-7"
+            >
               {(messages || []).map((msg) => {
                 const isChatMessage =
                   selectedUser?.type === "group"
@@ -876,7 +968,7 @@ const ChatPage = () => {
                                   handleMessageEdit(
                                     msg?.text,
                                     msg?.id,
-                                    msg?.file
+                                    msg?.file,
                                   )
                                 }
                                 className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md transition-colors"
@@ -901,16 +993,18 @@ const ChatPage = () => {
                                 <HiArrowUturnLeft size={16} />
                               </button>
                             </div>
-                            <div
-                              className={`
-    ${msg.text === null ? "hidden" : "block"}
-    flex flex-col 3xl:gap-2 
-  `}
-                            >
-                              {msg?.replyMessage?.id && (
-                                /* The Reply Container */
-                                <div
-                                  className={`
+                            {msg?.text === null ? (
+                              <p className="text-xs 2xl:text-lg 3xl:text-[22px] leading-relaxed">
+                                <span className="italic opacity-70">
+                                  This message was deleted
+                                </span>
+                              </p>
+                            ) : (
+                              <div className={`flex flex-col 3xl:gap-2`}>
+                                {msg?.replyMessage?.id && (
+                                  /* The Reply Container */
+                                  <div
+                                    className={`
   mb-2 p-2 rounded-r-lg border-l-4 text-xs
   ${
     isMe
@@ -918,54 +1012,62 @@ const ChatPage = () => {
       : "bg-black/5 border-[#574CD6]/40 text-gray-700"
   }
 `}
-                                >
-                                  <div className="flex items-center justify-between mb-1 gap-3">
-                                    <p
-                                      className={`font-bold text-[11px] ${
-                                        isMe ? "text-white" : "text-[#574CD6]"
-                                      }`}
-                                    >
-                                      {selectedUser?.name}
-                                    </p>
-                                    <p
-                                      className={`text-[10px] ${
-                                        isMe ? "text-white/60" : "text-gray-500"
-                                      }`}
-                                    >
-                                      {getDate(msg?.replyMessage?.createdAt)}
-                                    </p>
-                                  </div>
-
-                                  {/* Reply Content */}
-                                  <div className="truncate">
-                                    {msg?.replyMessage?.text?.trim() !== "" && (
+                                  >
+                                    <div className="flex items-center justify-between mb-1 gap-3">
                                       <p
-                                        className={`overflow-hidden text-ellipsis line-clamp-1 italic ${
-                                          isMe
-                                            ? "text-white/80"
-                                            : "text-gray-600"
+                                        className={`font-bold text-[11px] ${
+                                          isMe ? "text-white" : "text-[#574CD6]"
                                         }`}
                                       >
-                                        {msg?.replyMessage?.text}
+                                        {getReplyName(
+                                          msg?.replyMessage
+                                            ?.replyMessageSenderId,
+                                        )}
+                                        {/* {selectedUser?.type==="chat"?msg?.replyMessage?replyMessageSenderId===logedInUser?.id?logedInUser?.name:selectedUser?.name:""} */}
                                       </p>
-                                    )}
+                                      <p
+                                        className={`text-[10px] ${
+                                          isMe
+                                            ? "text-white/60"
+                                            : "text-gray-500"
+                                        }`}
+                                      >
+                                        {getDate(msg?.replyMessage?.createdAt)}
+                                      </p>
+                                    </div>
+
+                                    {/* Reply Content */}
+                                    <div className="truncate">
+                                      {msg?.replyMessage?.text?.trim() !==
+                                        "" && (
+                                        <p
+                                          className={`overflow-hidden text-ellipsis line-clamp-1 italic ${
+                                            isMe
+                                              ? "text-white/80"
+                                              : "text-gray-600"
+                                          }`}
+                                        >
+                                          {msg?.replyMessage?.text}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-
-                              {/* Main Message Text */}
-                              <p className="text-xs 2xl:text-lg 3xl:text-[22px] leading-relaxed">
-                                {msg.text === null ? (
-                                  <span className="italic opacity-70">
-                                    This message was deleted
-                                  </span>
-                                ) : (
-                                  msg.text
                                 )}
-                              </p>
 
-                              <FilesView msg={msg} />
-                            </div>
+                                {/* Main Message Text */}
+                                <p className="text-xs 2xl:text-lg 3xl:text-[22px] leading-relaxed">
+                                  {msg.text === null ? (
+                                    <span className="italic opacity-70">
+                                      This message was deleted
+                                    </span>
+                                  ) : (
+                                    msg.text
+                                  )}
+                                </p>
+
+                                <FilesView msg={msg} />
+                              </div>
+                            )}
 
                             {/* Footer: Time + Status */}
                             <div
@@ -993,7 +1095,7 @@ const ChatPage = () => {
                   </div>
                 );
               })}
-              <div ref={messageRef} className="h-2"></div>
+              <div ref={messageEndRef} className="h-2"></div>
             </div>
 
             {/* Input Wrapper - Clean Padding */}
