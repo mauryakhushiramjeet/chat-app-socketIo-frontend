@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useLayoutEffect,
+} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllFriends } from "../store/actions/userActions";
 import io from "socket.io-client";
@@ -22,6 +28,7 @@ import EditMessageArea from "../component/EditMessageArea ";
 import FilesView from "../component/FilesView";
 import Profile from "../component/Profile";
 import { getdefaultProfile } from "../helper/filePre";
+import { handleScrollOriganlMessage } from "../helper/handleScrollOriganlMessage";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -44,10 +51,13 @@ const ChatPage = () => {
   const [loading, setLoading] = useState(false);
   const [showUserChat, setShowUserChat] = useState(false);
   const [replyTomessage, setReplyToMessage] = useState(null);
-  const [isAtBottom, setIsBottom] = useState(false);
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
+  const messageReplyRef = useRef([]);
   const deleteMessageIdRef = React.useRef(null);
+  const isFetchingOldRef = useRef(false);
+
   const messagesRef = useRef([]);
 
   const dispatch = useDispatch();
@@ -147,7 +157,13 @@ const ChatPage = () => {
       "newMessage",
       ({ clientMessageId, response, files, replyMessage }) => {
         setSelectedFiles([]);
-        console.log(replyMessage, "new messageessssssssssss");
+        console.log(
+          clientMessageId,
+          response,
+          files,
+          replyMessage,
+          "new messageessssssssssss",
+        );
         const currentSelectedUser = selectedUserRef.current;
         // console.log(files);
         setPrivateMessages((prev) => {
@@ -269,7 +285,7 @@ const ChatPage = () => {
       setIsModelOpen(false);
     });
     newSocket.on("receiveGropMessage", (data) => {
-      console.log(data, "group messages ");
+      console.log(data, "new  group messages ");
       setReplyToMessage(null);
       setGroupMessages((prevMessages) => {
         const currentSelectedUser = selectedUserRef.current;
@@ -290,6 +306,7 @@ const ChatPage = () => {
             sender: data.sender,
             status: "Delivered",
             userId: data.sender.id,
+            replyMessageSenderId: data?.replyMessageSenderId,
             file: data?.file.length > 0 ? data?.file : null,
             replyMessage: data?.replyMessage ? data.replyMessage : null,
           },
@@ -364,6 +381,7 @@ const ChatPage = () => {
       getAllMessages({
         senderId: logedInUser.id,
         receiverId: selectedUser.id,
+        lastMessageId: null,
       }),
     );
   }, [logedInUser?.id, selectedUser?.id, dispatch]);
@@ -404,11 +422,15 @@ const ChatPage = () => {
   // console.log(privateMessages, "private message sis here");
   useEffect(() => {
     selectedUserRef.current = selectedUser;
+    firstLoadRef.current = true;
+    isFetchingOldRef.current = false;
+    selectedUserRef.current = selectedUser;
     setEditMessageId(null);
     setMessage("");
     setGroupMembers([]);
     setSelectedFiles([]);
-    firstLoadRef.current = true;
+    setPrivateMessages([]);
+    setGroupMembers([]);
   }, [selectedUser]);
 
   // console.log(replyTomessage, "reply to message id");
@@ -453,30 +475,6 @@ const ChatPage = () => {
       setMessage("");
     } else {
       const clientMessageId = crypto.randomUUID();
-      // socket.emit("sendMessage", {
-      //   clientMessageId,
-      //   senderId: logedInUser?.id,
-      //   receiverId: selectedUser?.id,
-      //   text: message,
-      //   type: selectedUser?.type,
-      // });
-      // setPrivateMessages((prev) => {
-      //   return [
-      //     ...prev,
-      //     {
-      //       clientMessageId,
-      //       id: null,
-      //       text: message,
-      //       receiverId: selectedUser?.id,
-      //       senderId: logedInUser.id,
-      //       status: "Pending",
-      //       createdAt: new Date(),
-      //       deletedByMeId: null,
-      //       deletedForAll: false,
-      //     },
-      //   ];
-      // });
-      // clientMessageId, text, senderId, receiverId, type
       const formData = new FormData();
       formData.append("clientMessageId", clientMessageId);
       formData.append("senderId", logedInUser?.id);
@@ -494,12 +492,8 @@ const ChatPage = () => {
       dispatch(sendMessage(formData))
         .unwrap()
         .then((res) => {
-          // // console.log(res);
           if (res.success) {
-            // console.log(res, "after success");
-            // console.log("before success oading is", loading);
             setLoading(false);
-            // console.log("after success oading is", loading);
           }
         })
         .catch((error) => {
@@ -514,7 +508,7 @@ const ChatPage = () => {
       receiverId: selectedUser?.id,
     });
   };
-  console.log(replyTomessage, "reply");
+  // console.log(replyTomessage, "reply");
   useEffect(() => {
     if (!logedInUser?.id) return;
     if (!onlineUsers.includes(String(logedInUser?.id)) || selectedUser) return;
@@ -538,7 +532,6 @@ const ChatPage = () => {
       !groupMessageStore?.messages
     )
       return;
-    // // console.log(groupMessageStore, "groupit iskljh");
     setGroupMessages(groupMessageStore?.messages);
     setGroupMembers(groupMessageStore?.members);
   }, [groupMessageStore]);
@@ -566,50 +559,73 @@ const ChatPage = () => {
 
     return `${hours12}:${minutes} ${period}`;
   };
-
+  console.log(messages);
   useEffect(() => {
-    if (messageStore?.messages.length === 0) return;
-    setPrivateMessages(messageStore?.messages);
-  }, [messageStore?.messages]);
-
-  // useEffect(() => {
-  //   if (messageEndRef.current)
-  //     // messageEndRef.current.scrollIntoView({ behavior: "smooth" });
-  // }, []);
-
-  const handleScroll = () => {
-    const el = chatTopRef?.current;
-    if (!el) return;
-    // console.log(
-    //   el.scrollHeight,
-    //   "total",
-    //   "scropll from top is",
-    //   el.scrollTop,
-    //   "main content heiht",
-    //   el.clientHeight,
-    // );
-    const atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
-    console.log(atBottom);
-    setIsBottom(atBottom);
+    if (!messageStore?.messages?.length) return;
+    console.log(messageStore?.isLoading);
+    if (messageStore?.isLoading) {
+      setIsChatLoading(true);
+    }
+    const newMessages = [...messageStore.messages].reverse();
+    // console.log(messageStore);
+    console.log(newMessages, "newmessages");
+    if (messageStore?.loadType === "INITIAL") {
+      setPrivateMessages(newMessages);
+    }
+    if (messageStore?.loadType === "PAGINATION") {
+      setPrivateMessages((prev) => [...newMessages, ...prev]);
+    }
+    isFetchingOldRef.current = false;
+  }, [messageStore?.messages, messageStore?.loadType]);
+  const loadOldChats = (lastMessageId) => {
+    if (!isFetchingOldRef.current) return;
+    console.log("want to see old message", lastMessageId);
+    dispatch(
+      getAllMessages({
+        senderId: logedInUser.id,
+        receiverId: selectedUser.id,
+        lastMessageId: lastMessageId,
+      }),
+    );
   };
-  // console.log(selectedUser)
+  const handleScroll = () => {
+    if (!chatTopRef.current) return;
+    if (isFetchingOldRef.current) return;
+    if (!messages.length) return;
+
+    const el = chatTopRef.current;
+    const atTop = el.scrollTop <= 20;
+
+    if (!atTop) return;
+
+    const firstMessageId = messages[0]?.id;
+    if (!firstMessageId) return;
+    console.log("at top", atTop);
+    isFetchingOldRef.current = true;
+    loadOldChats(firstMessageId);
+    // setTimeout(() => {
+    //   loadOldChats(firstMessageId);
+    // }, 2000);
+  };
+
   useEffect(() => {
-    if (!messageEndRef.current) return;
+    if (!messageEndRef.current || !chatTopRef.current) return;
+    if (!messages.length) return;
+    const el = chatTopRef.current;
+    console.log(firstLoadRef.current, "forst lpad");
+
     if (firstLoadRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: "auto" });
-
       firstLoadRef.current = false;
       return;
     }
-    if (isAtBottom) {
-      console.log("run this");
-      messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [isAtBottom, messages]);
 
-  useEffect(() => {
-    deleteMessageIdRef.current = deleteMessageId;
-  }, [deleteMessageId]);
+    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+
+    if (isAtBottom) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
   const handleDeleteForMe = () => {
     setIsModelOpen(false);
     const deleteMessageId = deleteMessageIdRef.current;
@@ -642,8 +658,6 @@ const ChatPage = () => {
     );
 
     const lastMessage = messages[messages.length - 1];
-    // // console.log(deleteMessage, "deleted message", messages, "filterMessages");
-    // // console.log(lastMessage, "last message this is");
     if (!deleteMessage || !lastMessage) {
       return false;
     }
@@ -678,7 +692,6 @@ const ChatPage = () => {
     console.log(editText, editMessageId, file, "edit message file");
     setEditMessageId(editMessageId);
     setEditedMesage({ editText, file });
-    // setMessage(editText);
   };
   useEffect(() => {
     const handleResize = () => {
@@ -697,21 +710,21 @@ const ChatPage = () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-  console.log(groupMembers);
+  // console.log(groupMembers);
   const getReplyName = (replySenderId) => {
-    console.log(replySenderId,"id")
-    if (selectedFiles?.type === "chat") {
+    // console.log(replySenderId, "id");
+    if (selectedUser?.type === "chat") {
       if (replySenderId === logedInUser?.id) {
         return logedInUser?.name;
       } else {
-        return selectedFiles?.name;
+        return selectedUser?.name;
       }
     } else {
       const memebername = groupMembers?.find((g) => g?.id === replySenderId);
       return memebername?.name;
     }
   };
-  console.log(messages);
+  // console.log(messages);
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito relative">
       {/* Sidebar - Added a subtle border-right */}
@@ -754,6 +767,7 @@ const ChatPage = () => {
                 <button
                   onClick={() => {
                     setShowUserChat(false);
+                    setSelectedUser(null);
                   }}
                   className={`hover:bg-white/10 rounded-full text-[#574CD6]/90 ${
                     window.innerWidth <= 768 && showUserChat
@@ -764,19 +778,6 @@ const ChatPage = () => {
                   <FaArrowLeft />
                 </button>
                 <div className="relative">
-                  {/* {selectedUser?.image && selectedUser.image.trim() !== "" ? (
-                    <img
-                      src={selectedUser.image}
-                      alt="User"
-                      className="max-w-[60px] max-h-[60px] rounded-full object-cover ring-2 ring-gray-50"
-                    />
-                  ) : (
-                    <Profile
-                      getdefaultProfile={getdefaultProfile}
-                      name={selectedUser?.name}
-                    />
-                  )} */}
-
                   <Profile
                     getdefaultProfile={getdefaultProfile}
                     selectedUser={selectedUser}
@@ -858,7 +859,7 @@ const ChatPage = () => {
             <div
               ref={chatTopRef}
               onScroll={handleScroll}
-              className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-7"
+              className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-7 border-4"
             >
               {(messages || []).map((msg) => {
                 const isChatMessage =
@@ -892,6 +893,11 @@ const ChatPage = () => {
                 return (
                   <div
                     key={msg.id}
+                    ref={(el) => {
+                      if (el) {
+                        messageReplyRef.current[msg?.id] = el;
+                      }
+                    }}
                     className={`flex w-full ${
                       isMe ? "justify-end" : "justify-start"
                     }`}
@@ -1004,8 +1010,14 @@ const ChatPage = () => {
                                 {msg?.replyMessage?.id && (
                                   /* The Reply Container */
                                   <div
+                                    onClick={() => {
+                                      handleScrollOriganlMessage(
+                                        msg?.replyMessage?.id,
+                                        messageReplyRef,
+                                      );
+                                    }}
                                     className={`
-  mb-2 p-2 rounded-r-lg border-l-4 text-xs
+  mb-2 p-2 rounded-r-lg border-l-4 text-xs cursor-pointer
   ${
     isMe
       ? "bg-black/15 border-white/60 text-white"
@@ -1020,9 +1032,9 @@ const ChatPage = () => {
                                         }`}
                                       >
                                         {getReplyName(
-                                          msg?.replyMessage
-                                            ?.replyMessageSenderId,
+                                          msg?.replyMessageSenderId,
                                         )}
+                                        {/* {msg?.replyMessageSenderId} */}
                                         {/* {selectedUser?.type==="chat"?msg?.replyMessage?replyMessageSenderId===logedInUser?.id?logedInUser?.name:selectedUser?.name:""} */}
                                       </p>
                                       <p

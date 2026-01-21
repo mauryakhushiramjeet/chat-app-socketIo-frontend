@@ -3,18 +3,19 @@ import axiosInstance from "../../axiosInstance";
 
 export const getAllMessages = createAsyncThunk(
   "get/messages",
-  async ({ senderId, receiverId }, { rejectWithValue }) => {
+  async ({ senderId, receiverId, lastMessageId }, { rejectWithValue }) => {
     try {
+      console.log(senderId, receiverId, lastMessageId, "idssss");
       const response = await axiosInstance.get("/getMessages", {
-        params: { senderId, receiverId },
+        params: { senderId, receiverId, lastMessageId },
       });
       // console.log(response);
-      return response.data.messages;
+      return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
       return rejectWithValue(error?.response?.data?.message);
     }
-  }
+  },
 );
 // For chaeking at receiver side to update its message status
 export const getAllReceiverMesages = createAsyncThunk(
@@ -31,7 +32,7 @@ export const getAllReceiverMesages = createAsyncThunk(
       console.log("AXIOS ERROR:", error.response);
       return rejectWithValue(error?.response?.data?.message);
     }
-  }
+  },
 );
 export const sendMessage = createAsyncThunk(
   "post/message",
@@ -43,7 +44,7 @@ export const sendMessage = createAsyncThunk(
       console.log("AXIOS ERROR:", error.response);
       return rejectWithValue(error?.response?.data?.message);
     }
-  }
+  },
 );
 export const sendGroupMessage = createAsyncThunk(
   "post/groupMessage",
@@ -55,7 +56,7 @@ export const sendGroupMessage = createAsyncThunk(
       console.log("AXIOS ERROR:", error.response);
       return rejectWithValue(error?.response?.data?.message);
     }
-  }
+  },
 );
 
 export const getGroupMessages = createAsyncThunk(
@@ -70,10 +71,10 @@ export const getGroupMessages = createAsyncThunk(
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
       return rejectWithValue(
-        error?.response?.data?.message || "Something went wrong"
+        error?.response?.data?.message || "Something went wrong",
       );
     }
-  }
+  },
 );
 export const updateMessageFile = createAsyncThunk(
   "post/updateMessageFile",
@@ -85,5 +86,5 @@ export const updateMessageFile = createAsyncThunk(
       console.log("AXIOS ERROR:", error.response);
       return rejectWithValue(error?.response?.data?.message);
     }
-  }
+  },
 );

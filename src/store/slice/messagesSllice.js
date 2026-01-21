@@ -4,6 +4,7 @@ const getAllMessagesSlice = createSlice({
   name: "messages",
   initialState: {
     messages: [],
+    loadType: null,
     isLoading: false,
     isError: false,
   },
@@ -17,7 +18,8 @@ const getAllMessagesSlice = createSlice({
       .addCase(getAllMessages.fulfilled, (state, action) => {
         state.isError = false;
         state.isLoading = false;
-        state.messages = action.payload;
+        state.messages = action.payload.messages;
+        state.loadType = action.payload.loadType;
       })
       .addCase(getAllMessages.rejected, (state, action) => {
         state.isError = true;
