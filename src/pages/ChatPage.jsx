@@ -515,7 +515,6 @@ const ChatPage = () => {
     const receiverId = logedInUser?.id;
     dispatch(getAllReceiverMesages({ receiverId }));
   }, [logedInUser?.id, dispatch, messages, onlineUsers]);
-
   useEffect(() => {
     if (
       !receiverMessageStore.isError &&
@@ -526,15 +525,21 @@ const ChatPage = () => {
     }
   }, [receiverMessageStore]);
   useEffect(() => {
-    if (
-      groupMessageStore?.isError ||
-      groupMessageStore?.isLoading ||
-      !groupMessageStore?.messages
-    )
+    if (groupMessageStore?.isError || !groupMessageStore?.messages) return;
+    if (groupMessageStore?.isLoading) {
+      setIsChatLoading(true);
+    }
+    const newMessages = [...groupMessageStore?.messages].reverse();
+    if (groupMessageStore?.loadType === "INITIAL") {
+      setGroupMessages(newMessages);
       return;
-    setGroupMessages(groupMessageStore?.messages);
-    setGroupMembers(groupMessageStore?.members);
-  }, [groupMessageStore]);
+    }
+
+    if (groupMessageStore?.loadType === "PAGINATION") {
+      setGroupMessages((prev) => [...newMessages, ...prev]);
+    }
+    isFetchingOldRef.current = false;
+  }, [groupMessageStore.messages, groupMessageStore.loadType]);
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (allReceiverMessages.length === 0 || !allReceiverMessages) return;
@@ -547,7 +552,7 @@ const ChatPage = () => {
       return;
     const id = selectedUser?.id;
     const groupId = id.split("-")[1];
-    dispatch(getGroupMessages(groupId));
+    dispatch(getGroupMessages({ groupId, lastMessageId: null }));
   }, [selectedUser]);
 
   const getDate = (date) => {
@@ -580,13 +585,21 @@ const ChatPage = () => {
   const loadOldChats = (lastMessageId) => {
     if (!isFetchingOldRef.current) return;
     console.log("want to see old message", lastMessageId);
-    dispatch(
-      getAllMessages({
-        senderId: logedInUser.id,
-        receiverId: selectedUser.id,
-        lastMessageId: lastMessageId,
-      }),
-    );
+    if (selectedUser?.type === "chat") {
+      dispatch(
+        getAllMessages({
+          senderId: logedInUser.id,
+          receiverId: selectedUser.id,
+          lastMessageId: lastMessageId,
+        }),
+      );
+    }
+    if (selectedUser?.type === "group") {
+      const id = selectedUser?.id;
+      const groupId = id.split("-")[1];
+
+      dispatch(getGroupMessages({ groupId, lastMessageId: lastMessageId }));
+    }
   };
   const handleScroll = () => {
     if (!chatTopRef.current) return;
@@ -594,10 +607,11 @@ const ChatPage = () => {
     if (!messages.length) return;
 
     const el = chatTopRef.current;
+    console.log("top", el.scrollTop, "scrollhright", el.scrollHeight,"clientheight",el.clientHeight);
     const atTop = el.scrollTop <= 20;
 
     if (!atTop) return;
-
+    // const isBottom=el.scrollHeight-el.scrollTop<=
     const firstMessageId = messages[0]?.id;
     if (!firstMessageId) return;
     console.log("at top", atTop);

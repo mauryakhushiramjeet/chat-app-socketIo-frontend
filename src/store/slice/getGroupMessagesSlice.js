@@ -7,6 +7,7 @@ const getGroupMessagesSlice = createSlice({
   initialState: {
     messages: [],
     members: [],
+    loadType: null,
     isLoading: false,
     isError: false,
   },
@@ -23,6 +24,7 @@ const getGroupMessagesSlice = createSlice({
         state.isLoading = false;
         state.messages = action.payload.messages;
         state.members = action.payload.users;
+        state.loadType = action.payload.loadType;
       })
       .addCase(getGroupMessages.rejected, (state) => {
         state.isError = true;
