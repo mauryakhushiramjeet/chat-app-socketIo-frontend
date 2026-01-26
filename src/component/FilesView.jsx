@@ -8,43 +8,20 @@ import { Navigation } from "swiper/modules";
 
 import { AiOutlineFile } from "react-icons/ai";
 import { FaPlayCircle } from "react-icons/fa";
-import { FaPauseCircle } from "react-icons/fa";
 import { GrNext } from "react-icons/gr";
 import { GrPrevious } from "react-icons/gr";
 import FilePreviewPage from "./FilePreviewPage";
 
 const FilesView = ({ msg }) => {
-  const [playVideo, setPlayVideo] = useState(null);
   const [viewFiles, setViewFiles] = useState([]);
   const [viewImage, setViewImage] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
-  const [showControls, setShowControls] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const swiperRef = useRef(null);
   const videoRefs = useRef({});
   const isFirstImage = currentIndex === 0;
   const isLastImage = currentIndex === viewFiles.length - 1;
 
-  // console.log(msg?.file);
-  // const handleVideoClick = (id) => {
-  //   const currentVideo = videoRefs.current[id];
-
-  //   if (playVideo && playVideo !== id) {
-  //     const prevVideo = videoRefs.current[playVideo];
-  //     prevVideo?.pause();
-  //   }
-
-  //   if (currentVideo.paused) {
-  //     currentVideo.play();
-  //     setPlayVideo(id);
-  //   } else {
-  //     currentVideo.pause();
-  //     setPlayVideo(null);
-  //   }
-  // };
-
-  // console.log(viewFiles);
-  // console.log("isFisr", isFirstImage, "isLast", isLastImage);
   const handlePrevFile = (e) => {
     e.stopPropagation();
     if (currentIndex > 0) {
@@ -56,7 +33,6 @@ const FilesView = ({ msg }) => {
   };
   const handleNextFile = (e) => {
     e.stopPropagation();
-    // console.log(viewFiles);
     if (currentIndex < viewFiles.length - 1) {
       const newIndex = currentIndex + 1;
       setCurrentIndex(newIndex);
@@ -64,40 +40,19 @@ const FilesView = ({ msg }) => {
       swiperRef?.current?.slideTo(newIndex);
     }
   };
-  // console.log(viewImage, "viewimage", currentIndex);
   const chatFiles = msg?.file || [];
-  // console.log(chatFiles, "chat fies");
   const mediaFiles = chatFiles?.filter(
     (f) => f.fileType?.startsWith("image/") || f.fileType?.startsWith("video/"),
   );
-  // console.log(mediaFiles.length, "media file");
-  // console.log(viewFiles, "view files");
-  // console.log(currentIndex);
-  const downloadFile = (file) => {
-    const link = document.createElement("a");
-    link.href = file.filePath;
-    link.download = file.fileName; // ⭐ real filename
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // console.log(chatFiles);
+  const documentFiles = chatFiles.filter(
+    (f) =>
+      !f.fileType?.startsWith("image/") && !f.fileType?.startsWith("video/"),
+  );
 
   const handleFileClick = (file) => {
     setPreviewFile(file);
   };
-
-  useEffect(() => {
-    const checkScreen = () => {
-      setShowControls(window.innerWidth >= 640);
-    };
-
-    checkScreen(); // run on load
-    window.addEventListener("resize", checkScreen);
-
-    return () => window.removeEventListener("resize", checkScreen);
-  }, []);
-  // console.log(viewImage, "view");
-  // console.log(viewFiles);
   return (
     <div className="flex flex-wrap gap-2 ">
       {viewImage !== null && (
@@ -230,7 +185,7 @@ const FilesView = ({ msg }) => {
                           setCurrentIndex(index);
                         }}
                       />
-                      <button
+                      {/* <button
                         className="absolute inset-0 bg-black/30 flex items-center justify-center text-3xl text-white z-10"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -242,7 +197,7 @@ const FilesView = ({ msg }) => {
                         ) : (
                           <FaPlayCircle />
                         )}
-                      </button>
+                      </button> */}
                     </div>
                   )}
                 </SwiperSlide>
@@ -259,8 +214,8 @@ const FilesView = ({ msg }) => {
       )}
 
       {/* chat secyion */}
-      {chatFiles.length !== 0 &&
-        (chatFiles || []).map((file, index) => (
+      {mediaFiles.length !== 0 &&
+        (mediaFiles || []).map((file, index) => (
           <div
             className={`${msg?.text === null ? "hidden" : "block"} ${
               index > 3 &&
@@ -269,15 +224,22 @@ const FilesView = ({ msg }) => {
                 ? "hidden"
                 : "flex"
             } 
-            ${
-              chatFiles?.length >= 2
-                ? "w-[calc(50%-4px)]"
-                : "max-w-[230px] xs:max-w-[250px] 2xl:max-w-[300]"
-            }
+            
+             ${
+               mediaFiles?.length >= 2
+                 ? "w-[calc(50%-4px)] "
+                 : "max-w-[230px] xs:max-w-[250px] 2xl:max-w-[300]"
+             }
+             
              relative`}
             key={file?.id}
           >
             <div
+              onClick={() => {
+                setViewFiles(mediaFiles);
+                setCurrentIndex(mediaFiles.findIndex((f) => f.id === file.id));
+                setViewImage(file);
+              }}
               className={`bg-[#5042C2]/50 flex items-center justify-center absolute  ${
                 index === 3 &&
                 mediaFiles?.length > 4 &&
@@ -297,7 +259,7 @@ const FilesView = ({ msg }) => {
               </p>
             </div>
             {file?.fileType?.startsWith("image/") && (
-              <div className="h-full w-full cursor-pointer border border-gray-300/50 rounded-lg  bg-[#786FDD] overflow-hidden  max-h-[200px] ">
+              <div className="h-full w-full cursor-pointer border border-gray-300/50 rounded-lg  bg-[#786FDD] overflow-hidden max-h-[120px] lg:max-h-[200px] ">
                 <img
                   src={file?.filePath}
                   alt="user"
@@ -313,18 +275,18 @@ const FilesView = ({ msg }) => {
               </div>
             )}
             {file?.fileType?.startsWith("video/") && (
-              <div className="max-h-[180px] md:max-h-[200px] w-full relative border border-gray-300/50 rounded-lg overflow- relative ">
+              <div className="max-h-[120px] lg:max-h-[200px] w-full  border border-gray-300/50 rounded-lg overflow- relative ">
                 <video
                   ref={(el) => (videoRefs.current[file?.id] = el)}
                   src={file?.filePath}
                   muted
-                  controls={showControls}
+                  // controls
                   // loop
                   className={`h-full w-full cursor-pointer object-cover`}
                   playsInline
                   onClick={() => {
-                    setViewFiles(chatFiles);
-                    setViewImage(mediaFiles);
+                    setViewFiles(mediaFiles);
+                    setViewImage(file);
                     setCurrentIndex(
                       mediaFiles.findIndex((f) => f.id === file.id),
                     );
@@ -332,20 +294,20 @@ const FilesView = ({ msg }) => {
                 />
                 <button
                   onClick={() => {
-                    setViewFiles(chatFiles);
-                    setViewImage(mediaFiles);
+                    setViewFiles(mediaFiles);
+                    setViewImage(file);
                     setCurrentIndex(
                       mediaFiles.findIndex((f) => f.id === file.id),
                     );
                   }}
-                  className="block xs:hidden absolute left-1/2 top-1/2 text-white text-xl cursor-pointer"
+                  className=" absolute left-1/2 top-1/2 text-white text-xl lg:text-3xl 2xl:text-4xl cursor-pointer"
                 >
                   <FaPlayCircle />
                 </button>
               </div>
             )}
 
-            {!file?.fileType?.startsWith("image/") &&
+            {/* {!file?.fileType?.startsWith("image/") &&
               !file?.fileType?.startsWith("video/") && (
                 <div
                   onClick={() => handleFileClick(file)}
@@ -358,9 +320,32 @@ const FilesView = ({ msg }) => {
                   </span>
                   <span className="truncate">{file?.fileName}</span>
                 </div>
-              )}
+              )} */}
           </div>
         ))}
+      <div
+        className={`w-full flex gap-2  ${
+          documentFiles?.length >= 2
+            ? "w-[calc(50%-4px)] "
+            : "max-w-[230px] xs:max-w-[250px] 2xl:max-w-[300]"
+        }`}
+      >
+        {documentFiles &&
+          documentFiles.length !== 0 &&
+          (documentFiles || []).map((file) => (
+            <div
+              onClick={() => handleFileClick(file)}
+              // onClick={()=>window.open(file?.filePath, "_blank")}
+              className="text-xs xl:text-sm 2xl:text-lg 3xl:text-xl font-semibold bg-white h-fit rounded-lg p-2 border-2 text-[#564BD4] flex items-center gap-2 cursor-pointer border-gray-200 w-full max-w-[120px] xs:max-w-[184px] sm:max-w-full"
+            >
+              <span className="font-bold">
+                {" "}
+                <AiOutlineFile />{" "}
+              </span>
+              <span className="truncate">{file?.fileName}</span>
+            </div>
+          ))}
+      </div>
     </div>
   );
 };

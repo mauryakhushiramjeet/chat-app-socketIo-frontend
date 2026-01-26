@@ -10,6 +10,8 @@ import { LuSmilePlus } from "react-icons/lu";
 import Picker from "emoji-picker-react";
 import { useDispatch } from "react-redux";
 import { updateMessageFile } from "../store/actions/messageActions";
+import { LuSendHorizontal } from "react-icons/lu";
+import { LuLoaderCircle } from "react-icons/lu";
 
 const EditMessageArea = ({
   editedMessage,
@@ -29,6 +31,7 @@ const EditMessageArea = ({
   const [deletedFileId, setDeletedFileId] = useState([]);
   const [newAddedFiles, setNewAddedFiles] = useState([]);
   const [newEditedText, setNewEditedText] = useState("");
+  const [loading, setLoading] = useState(false);
   const imoziPickerRef = useRef(null);
   const mediaRef = useRef(null);
   const fileRef = useRef(null);
@@ -82,9 +85,16 @@ const EditMessageArea = ({
     //   type: selectedUser?.type,
     //   file: file?.length > 0 ? file : null,
     // });
+
     console.log(deletedFileId);
-    console.log(newEditedText);
+
     const formData = new FormData();
+    if (newEditedText.trim() === "" && file?.length === 0) {
+      setFileLimitError("Message can't be empty");
+      return;
+    }
+    setLoading(true);
+
     formData.append("messageId", editMessageId);
     formData.append("senderId", logedInUser?.id);
     formData.append("receiverId", selectedUser?.id);
@@ -104,16 +114,24 @@ const EditMessageArea = ({
       console.log(groupId, "group id is");
       formData.append("groupId", groupId);
     }
-
+    formData.append("fileExist", file.length !== 0 ? true : false);
     for (let i = 0; i < newAddedFiles.length; i++) {
       formData.append("file", newAddedFiles[i]);
     }
     console.log(finalText, file, "check");
-    if (newEditedText.trim() === "" && file?.length === 0) {
-      setFileLimitError("Message can't be empty");
-      return;
-    }
-    dispatch(updateMessageFile(formData));
+
+    dispatch(updateMessageFile(formData))
+      .unwrap()
+      .then((res) => {
+        // console.log(res, "resposne");
+        if (res.success) {
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        // console.log(error);
+        setLoading(false);
+      });
     setEditMessageId(null);
     setEditMessageId("");
   };
@@ -125,7 +143,7 @@ const EditMessageArea = ({
     }
   }, [fileLimitError]);
   return (
-    <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden flex flex-col transition-all">
+    <div className="w-full max-w-[240px] xs:max-w-[300px] sm:max-w-[350px] lg:max-w-[500px] xl:max-w-[550px] 2xl:max-w-[700px] bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden flex flex-col transition-all">
       {fileLimitError && fileLimitError.trim() !== "" && (
         <div
           ref={fileErrorRef}
@@ -138,7 +156,7 @@ const EditMessageArea = ({
         </div>
       )}
 
-      <div className="max-h-[150px] overflow-y-auto p-3 hide-scrollbar">
+      <div className="max-h-[200px] 2xl:max-h-[250px] overflow-y-auto p-3 hide-scrollbar">
         <textarea
           ref={textAreaRef}
           value={newEditedText}
@@ -197,15 +215,13 @@ const EditMessageArea = ({
             {showImozi && (
               <div
                 ref={imoziPickerRef}
-                className="absolute bottom-12 left-0 z-50 shadow-2xl"
+                className="emoji-wrapper absolute bottom-12 left-0 z-50 shadow-2xl"
               >
                 <Picker
                   onEmojiClick={(emoji) => {
                     setEditedMessage(editedMessage?.editText + emoji.emoji);
                     setShowImozi(false);
                   }}
-                  height={350}
-                  width={280}
                 />
               </div>
             )}
@@ -257,9 +273,21 @@ const EditMessageArea = ({
 
           <button
             onClick={() => sendEditMessage()}
-            className="p-2 bg-[#574CD6] text-white rounded-lg hover:bg-[#4633A6] shadow-md transition-all flex items-center justify-center active:scale-95"
+            className={`${
+              loading || (file?.length > 10 && newEditedText?.trim() === "")
+                ? "cursor-default"
+                : "cursor-pointer"
+            } text-gray-400 rounded-md transition-colors hover:text-[#554AD1]`}
           >
-            <FaCheck size={14} />
+            {loading ? (
+              <p className="text-[#554AD1] text-2xl font-bold animate-spin">
+                <LuLoaderCircle />
+              </p>
+            ) : (
+              <LuSendHorizontal />
+            )}
+
+            {/* <FaCheck size={14} /> */}
           </button>
         </div>
       </div>

@@ -61,12 +61,12 @@ export const sendGroupMessage = createAsyncThunk(
 
 export const getGroupMessages = createAsyncThunk(
   "get/groupMessages",
-  async ({ groupId, lastMessageId}, { rejectWithValue }) => {
+  async ({ senderId, groupId, lastMessageId }, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get("/getGroupMessages", {
-        params: { groupId,lastMessageId },
+        params: { senderId, groupId, lastMessageId },
       });
-      // console.log(response.data, "resposne data is here");
+     
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);

@@ -21,9 +21,10 @@ const getAllMessagesSlice = createSlice({
         state.messages = action.payload.messages;
         state.loadType = action.payload.loadType;
       })
+
       .addCase(getAllMessages.rejected, (state, action) => {
         state.isError = true;
-        state.isLoading = false;
+        state.true = false;
       });
   },
 });

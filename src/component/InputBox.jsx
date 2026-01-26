@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import TypingIndicator from "../component/TypingIndicator";
-import { IoSend } from "react-icons/io5";
-import Picker from "emoji-picker-react";
 import { LuSmilePlus } from "react-icons/lu";
 import { ImAttachment } from "react-icons/im";
 import { FiImage } from "react-icons/fi";
@@ -13,6 +11,7 @@ import { RxCross1 } from "react-icons/rx";
 import { LuLoaderCircle } from "react-icons/lu";
 import { getdefaultProfile } from "../helper/filePre";
 import { getDate } from "../helper/getDate";
+import ImojiPiker from "./ImojiPiker";
 
 const InputBox = ({
   typingUserId,
@@ -35,6 +34,7 @@ const InputBox = ({
   const mediaRef = useRef(null);
   const fileRef = useRef(null);
   const fileErrorRef = useRef(null);
+  const fileBottomRef = useRef(null);
   // loading = true;
   // const loading = true;
   useEffect(() => {
@@ -62,27 +62,26 @@ const InputBox = ({
     textRef.current.style.height = `${textRef.current.scrollHeight}px`;
   }, [message]);
   useEffect(() => {
-    if (selectedFiles.length === 0) return;
+    if (selectedFiles.length === 0 || !fileBottomRef.current) return;
+    // requestAnimationFrame(() => {
+    //   fileBottomRef.current.scrollIntoView({ behavior: "smooth" });
+    // });
+    fileBottomRef.current.scrollTop = fileBottomRef.current.scrollHeight;
   }, [selectedFiles]);
   const handleImages = (e) => {
     // console.log(e.target?.files[0], "this file");
     const file = e.target?.files[0];
-    const url = URL.createObjectURL(file);
     const arrayFile = Array.from(e.target?.files);
     setSelectedFiles((prev) => [...prev, ...arrayFile]);
   };
 
   const handleFiles = (e) => {
-    // console.log(e.target?.files[0], "this file");
-    const file = e.target?.files;
     const arrayFile = Array.from(e.target?.files);
     setSelectedFiles((prev) => [...prev, ...arrayFile]);
-    // console.log(file);
-    // const url = URL.createObjectURL(file);
+   
   };
-  // console.log(selectedFiles);
   useEffect(() => {
-    if (selectedFiles?.length > 10) {
+    if (selectedFiles?.length > 10 && fileLimitError === false) {
       setFileLimitError(true);
     }
   }, [selectedFiles]);
@@ -94,7 +93,6 @@ const InputBox = ({
       }, [3000]);
     }
   }, [fileLimitError]);
-  // console.log(replyTomessage);
   return (
     <div className="">
       {typingUserId === selectedUser?.id && (
@@ -184,48 +182,56 @@ const InputBox = ({
             </div>
           )}
           {selectedFiles.length > 0 && (
-            <div className="flex gap-3 flex-wrap p-3 max-h-40 overflow-y-auto">
-              {selectedFiles.map((file, index) => (
-                <div
-                  key={index}
-                  className="relative flex items-center gap-3 w-64 p-2 bg-white border border-[#574CD6]rounded-xl shadow-sm hover:shadow-md transition-shadow group"
-                >
-                  {/* Icon Container */}
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-50 text-[#574CD6] shrink-0">
-                    {file.type.startsWith("image/") && <SlPicture size={20} />}
-                    {file.type.startsWith("video/") && (
-                      <RiVideoFill size={20} />
-                    )}
-                    {!file.type.startsWith("video/") &&
-                      !file.type.startsWith("image/") && (
-                        <AiOutlineFile size={20} />
-                      )}
-                  </div>
-
-                  {/* File Details */}
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-700 truncate">
-                      {file.name}
-                    </p>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
-                      {(file.size / 1024).toFixed(1)} KB • Ready to send
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      setSelectedFiles((prev) =>
-                        prev.filter((_, i) => i !== index)
-                      )
-                    }
-                    className="p-1.5 rounded-full text-gray-400 hover:bg-[#574CD6]/10 hover:text-[#574CD6] transition-colors"
-                    title="Remove file"
+            <>
+              {" "}
+              <div
+                ref={fileBottomRef}
+                className="flex gap-3 flex-wrap p-3 max-h-24 overflow-y-auto"
+              >
+                {selectedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="relative flex items-center gap-3 w-64 p-2 bg-white border border-[#574CD6]rounded-xl shadow-sm hover:shadow-md transition-shadow group"
                   >
-                    <RxCross1 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
+                    {/* Icon Container */}
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-50 text-[#574CD6] shrink-0">
+                      {file.type.startsWith("image/") && (
+                        <SlPicture size={20} />
+                      )}
+                      {file.type.startsWith("video/") && (
+                        <RiVideoFill size={20} />
+                      )}
+                      {!file.type.startsWith("video/") &&
+                        !file.type.startsWith("image/") && (
+                          <AiOutlineFile size={20} />
+                        )}
+                    </div>
+
+                    {/* File Details */}
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-700 truncate">
+                        {file.name}
+                      </p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
+                        {(file.size / 1024).toFixed(1)} KB • Ready to send
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        setSelectedFiles((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
+                      className="p-1.5 rounded-full text-gray-400 hover:bg-[#574CD6]/10 hover:text-[#574CD6] transition-colors"
+                      title="Remove file"
+                    >
+                      <RxCross1 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
           <textarea
             ref={textRef}
@@ -236,7 +242,6 @@ const InputBox = ({
               if (e.key === "Enter") {
                 e.preventDefault();
                 handleSendMessage();
-                // textRef.current.style.height = "40px";
               }
             }}
             placeholder="Type a message..."
@@ -245,22 +250,18 @@ const InputBox = ({
             className="w-full text-sm 2xl:text-base 3xl:text-xl hide-scrollbar rounded-xl px-3 pt-3  resize-none focus:outline-none max-h-[200px] overflow-y-auto"
           />{" "}
           <div className="flex gap-3 3xl:gap-5 px-3 pb-3 items-center justify-end w-full relative text-lg xl:text-xl 3xl:text-3xl">
-            {showImozi && (
-              <div
-                ref={imoziPickerRef}
-                className="absolute right-[70px] bottom-[45px] w-[280px] h-[300px] sm:w-[320px] sm:h-[400px] overflow-y-scroll"
-              >
-                <Picker
-                  className=""
-                  emojiStyle="small"
-                  // emoji
-                  onEmojiClick={(emojiObject) => {
-                    setMessage((prev) => prev + emojiObject.emoji);
-                    setShowImozi(false);
-                  }}
-                />
-              </div>
-            )}
+            <div
+              ref={imoziPickerRef}
+              className="absolute right-3 sm:right-[70px] bottom-[45px] x z-[11]"
+              // style={{}}
+            >
+              <ImojiPiker
+                showImozi={showImozi}
+                setShowImozi={setShowImozi}
+                setMessage={setMessage}
+              />
+            </div>
+
             <button
               onClick={() => setShowImozi(true)}
               title="Emoji's "

@@ -27,7 +27,6 @@ const Sidebar = ({
   socket,
   setLogedInUser,
   onlineUsers,
-  showUserChat,
   setShowUserChat,
 }) => {
   const [searchText, setSearchText] = useState("");
@@ -97,7 +96,7 @@ const Sidebar = ({
     setSelectedMembers((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+        : [...prev, userId],
     );
   };
 
@@ -140,7 +139,7 @@ const Sidebar = ({
     if (!friends) return;
     const allUserCopy = [...friends];
     const filterUsers = allUserCopy.filter((user) =>
-      user?.name.toLocaleLowerCase().includes(searchText.toLocaleLowerCase())
+      user?.name.toLocaleLowerCase().includes(searchText.toLocaleLowerCase()),
     );
     setSearchingUser(filterUsers);
   }, [searchText, friends]);
@@ -162,8 +161,29 @@ const Sidebar = ({
     dispatch(getSidebarChatList({ loggedInUserId: logedInUser?.id }));
   }, [logedInUser, dispatch]);
 
+  const getSidebarLastMessage = (item) => {
+    if (
+      item?.lastMessage?.trim() === "" &&
+      item?.lastMessageCreatedAt == null
+    ) {
+      return null;
+    }
+    if (
+      item?.lastMessage?.trim() === "" &&
+      item?.lastMessageCreatedAt !== null
+    ) {
+      return "Send a file";
+    }
+    if (item.lastMessage?.trim() !== "") {
+      return item.lastMessage;
+    }
+    return "Tap to chat";
+  };
   useEffect(() => {
     if (!sidebarChatListStore?.isError && !sidebarChatListStore?.isLoading) {
+      // console.log(
+      //   sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions,
+      // );
       const normalizedUsers = (
         sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions || []
       ).map((item) => {
@@ -173,10 +193,8 @@ const Sidebar = ({
           type: item.type,
           name: item.type === "group" ? item.name : item.chatUser?.name,
           image: item.type === "group" ? item.groupImage : item.chatUser?.image,
-          lastMessage:
-            item.lastMessage.trim() === ""
-              ? "Send a file"
-              : item.lastMessage || "Tap to chat",
+          lastMessage: getSidebarLastMessage(item),
+
           lastMessageId: item.lastMessageId,
           LastActiveAt:
             item.type === "group" ? null : item.chatUser?.LastActiveAt,
@@ -207,11 +225,12 @@ const Sidebar = ({
         //   lastMessageId
         // );
         // console.log("conversationId", conversationId);
-        console.log(lastMessageId, "lastmessageId");
+        // console.log(lastMessageId, "lastmessageId");
         setUsers((prevUsers) => {
           const conversationIndex = prevUsers.findIndex(
             (item) =>
-              String(item.id) === String(targetChatUserId) && item.type === type
+              String(item.id) === String(targetChatUserId) &&
+              item.type === type,
           );
           // console.log(conversationIndex, "index");
           if (conversationIndex !== -1) {
@@ -242,7 +261,7 @@ const Sidebar = ({
             ];
           }
         });
-      }
+      },
     );
 
     socket.on("groupCreate", ({ id, name, image, members }) => {
@@ -269,7 +288,7 @@ const Sidebar = ({
           "new group message is receive",
           message,
           "message id is",
-          lastMessageId
+          lastMessageId,
         );
         setUsers((prev) =>
           prev.map((group) =>
@@ -281,36 +300,44 @@ const Sidebar = ({
                   file: file.length > 0 ? file : null,
                   lastMessageCreatedAt: new Date(),
                 }
-              : group
-          )
+              : group,
+          ),
         );
-      }
+      },
     );
     socket.on(
       "sidebar:update",
-      ({ lastMessage, sidebarChatId, type, lastMessageId, deleteType }) => {
-        // console.log(
-        //   "gated sidebar update signal for",
-        //   deleteType,
-        //   "type",
-        //   lastMessage,
-        //   sidebarChatId,
-        //   type,
-        //   lastMessageId,
-        //   lastMessageCreatedAt,
-        //   deleteType
-        // );
+      ({
+        lastMessage,
+        sidebarChatId,
+        type,
+        lastMessageId,
+        lastMessageCreatedAt,
+        deleteType,
+      }) => {
+        console.log("mainId", sidebarChatId, "last message,", lastMessage);
+        console.log(
+          "gated sidebar update signal for",
+          deleteType,
+          "type",
+          lastMessage,
+          sidebarChatId,
+          type,
+          lastMessageId,
+          lastMessageCreatedAt,
+          deleteType,
+        );
         if (deleteType === "For_Everypone") {
           const users = usersRef.current;
           console.log(users);
           const lastmessageList = users.find(
-            (msg) => msg?.lastMessageId === lastMessageId
+            (msg) => msg?.mainId === sidebarChatId,
           );
           console.log(
             "lastmessages list",
             lastmessageList,
             "and the messges deleted id is:",
-            lastMessageId
+            lastMessageId,
           );
           if (!lastmessageList) return;
         }
@@ -320,14 +347,21 @@ const Sidebar = ({
               ? {
                   ...chatList,
                   lastMessage:
-                    lastMessage.trim() === "" ? "Send a file" : lastMessage,
+                    lastMessage.trim() === "" && lastMessageCreatedAt === null
+                      ? ""
+                      : lastMessage.trim() === "" &&
+                          lastMessageCreatedAt !== null
+                        ? "Send a File"
+                        : lastMessage?.trim() !== ""
+                          ? lastMessage
+                          : "Start conversation",
                   lastMessageCreatedAt: new Date(),
                   lastMessageId: lastMessageId,
                 }
-              : chatList
-          )
+              : chatList,
+          ),
         );
-      }
+      },
     );
   }, [socket, logedInUser]);
   // console.log(users);
@@ -404,8 +438,8 @@ const Sidebar = ({
                   image: image,
                 },
               }
-            : user
-        )
+            : user,
+        ),
       );
     });
 
@@ -421,6 +455,8 @@ const Sidebar = ({
     localStorage.removeItem("userData");
     navigate("/");
   };
+  // console.log(onlineUsers, "online users");
+
   const handleUserChatSelect = (userCoversation) => {
     setSelectedUser(userCoversation);
     setShowUserChat(true);
@@ -460,6 +496,7 @@ const Sidebar = ({
                   <img
                     src={groupImage.image}
                     className="w-full h-full object-cover"
+                    alt="group-image"
                   />
                 ) : (
                   <FaUsers className="text-4xl text-white/40" />
@@ -499,19 +536,9 @@ const Sidebar = ({
                   selectedMembers.includes(friend.id)
                     ? "bg-white/20"
                     : "hover:bg-white/10"
-                }`} 
+                }`}
               >
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-                  {/* {friend.image ? (
-                    <img
-                      src={friend.image}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-[10px]">
-                      {getdefaultProfile(friend.name)}
-                    </span>
-                  )} */}
                   <Profile
                     getdefaultProfile={getdefaultProfile}
                     selectedUser={friend}
@@ -663,15 +690,6 @@ const Sidebar = ({
         className="px-3 sm:px-8 md:px-5 py-5 flex items-center gap-3 bg-[#4633A6]/40 border-b border-white/10 cursor-pointer hover:bg-[#4633A6]/60 transition-all group"
       >
         <div className="relative shrink-0">
-          {/* {logedInUser?.image && logedInUser.image.trim() !== "" ? (
-            <img
-              src={logedInUser.image}
-              alt="Me"
-              className="w-12 h-12 rounded-full border-2 border-white/30 object-cover"
-            />
-          ) : (
-            <Profile getdefaultProfile={getdefaultProfile} name={logedInUser?.name}/>
-          )} */}
           <Profile
             getdefaultProfile={getdefaultProfile}
             selectedUser={logedInUser}
@@ -681,7 +699,7 @@ const Sidebar = ({
           </div>
         </div>
         <div className="overflow-hidden">
-          <p className="font-bold text-sm 2xl:text-[22px] 3xl:text-2xl leading-tight truncate">
+          <p className="font-bold text-sm xs:text-base lg:text-lg 2xl:text-[22px] 3xl:text-2xl leading-tight truncate">
             {logedInUser?.name}
           </p>
           <p className="text-xs 2xl:text-base text-white/50 mt-1">
@@ -828,7 +846,7 @@ const Sidebar = ({
                       : "text-white/50"
                   }`}
                 >
-                  {userCoversation?.lastMessage || "Tap to chat"}
+                  {userCoversation?.lastMessage}
                 </p>
                 {userCoversation?.lastMessageCreatedAt && (
                   <p className="opacity-70 ml-2 shrink-0 text-xs 2xl:text-sm 3xl:text-lg">

@@ -111,3 +111,12 @@
   background-color: #4633A6; /* darker on hover */
 }
 
+.emoji-picker {
+  --epr-emoji-size: 20px;
+  --epr-category-label-height: 36px;
+  --epr-header-padding: 10px;
+  --epr-search-height: 36px;
+
+ --epr-picker-width: 300px !important;
+  --epr-picker-height: 300px !important;
+}
