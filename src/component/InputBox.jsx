@@ -78,7 +78,6 @@ const InputBox = ({
   const handleFiles = (e) => {
     const arrayFile = Array.from(e.target?.files);
     setSelectedFiles((prev) => [...prev, ...arrayFile]);
-   
   };
   useEffect(() => {
     if (selectedFiles?.length > 10 && fileLimitError === false) {
@@ -308,13 +307,15 @@ const InputBox = ({
               type="file"
               onClick={() => handleSendMessage()}
               disabled={
-                (message?.trim() === "" && selectedFiles.length === 0) ||
-                loading ||
-                selectedFiles?.length > 10
+                (message?.trim() === "" &&
+                  (selectedFiles.length === 0 || selectedFiles?.length > 10)) ||
+                loading
               }
               accept="image/*"
               className={`${
-                loading || selectedFiles?.length > 10 || message?.trim() === ""
+                (message?.trim() === "" &&
+                  (selectedFiles.length === 0 || selectedFiles?.length > 10)) ||
+                loading
                   ? "cursor-default"
                   : "cursor-pointer"
               } text-gray-400 rounded-md transition-colors hover:text-[#554AD1]`}

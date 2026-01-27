@@ -39,11 +39,11 @@ const SignupPage = () => {
       dispatch(signupUser(formData))
         .unwrap()
         .then((res) => {
-          console.log(res);
+          // console.log(res);
           if (res.success) {
             toast.success(res.message);
             localStorage.setItem("userData", JSON.stringify(res.data));
-            navigate("/chat");
+            navigate("/emailVerify");
           } else {
             toast.error(res.message);
           }

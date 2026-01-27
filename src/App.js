@@ -6,6 +6,7 @@ import { ToastContainer } from "react-toastify";
 import LoginPage from "./pages/LogInPage";
 import PrivateRoute from "./routes/PrivateRoute";
 import PublicRoute from "./routes/PublicRoute";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 const App = () => {
   return (
     <BrowserRouter>
@@ -14,6 +15,7 @@ const App = () => {
           {" "}
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/" element={<LoginPage />} />
+          <Route path="/emailVerify" element={<VerifyEmailPage />} />
         </Route>
         <Route element={<PrivateRoute />}>
           <Route path="/chat" element={<ChatPage />} />

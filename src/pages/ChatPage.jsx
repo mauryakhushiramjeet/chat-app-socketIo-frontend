@@ -14,6 +14,7 @@ import {
   getGroupMessages,
   sendMessage,
   sendGroupMessage,
+  updateMembersLastMsgSeenId,
 } from "../store/actions/messageActions";
 import Sidebar from "../component/Sidebar";
 import { LuSmilePlus } from "react-icons/lu";
@@ -32,6 +33,7 @@ import { handleScrollOriganlMessage } from "../helper/handleScrollOriganlMessage
 import ChatMessageShimmer from "../component/ChatMessageShimmer ";
 import { getDateSeperator } from "../helper/getDateSeparator";
 import ChatOptions from "../component/ChatOptions";
+import GroupMessageSeen from "../component/GroupMessageSeen ";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -50,6 +52,8 @@ const ChatPage = () => {
   const [privateMessages, setPrivateMessages] = useState([]);
   const [groupMessages, setGroupMessages] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
+  const [lastSendMsgId, setLastSendMsgId] = useState();
+  const [seenMembers, setSeenMberes] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [showChatOptions, setShowChatOptions] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -350,6 +354,8 @@ const ChatPage = () => {
     );
     newSocket.on("receiveGropMessage", (data) => {
       setReplyToMessage(null);
+      console.log("group message recieve", data);
+      setLastSendMsgId(Number(data?.lastMessageId));
       setGroupMessages((prevMessages) => {
         const currentSelectedUser = selectedUserRef.current;
         if (currentSelectedUser?.id !== data?.groupId) return;
@@ -362,7 +368,7 @@ const ChatPage = () => {
         return [
           ...prevMessages,
           {
-            id: data.messageId,
+            id: data.lastMessageId,
             text: data.message,
             groupId: data.groupId.split("-")[1],
             createdAt: new Date(),
@@ -375,11 +381,24 @@ const ChatPage = () => {
           },
         ];
       });
+      const messageSenderId = data?.sender?.id;
+      const lastMessageId = Number(data?.lastMessageId);
+      const memberId = Number(logedInUser?.id);
+      const isMyMsg = Number(messageSenderId) === Number(logedInUser?.id);
+      const groupId = Number(data?.groupId?.split("-")[1]);
+      if (isMyMsg) return;
+      newSocket.emit("memeberLastMsgSeenUpdate", {
+        messageSenderId,
+        lastMessageId,
+        memberId,
+        groupId,
+      });
     });
-
+    newSocket.on("groupMsgSeen", ({ memebers }) => {
+      setSeenMberes(memebers);
+    });
     return () => newSocket.disconnect();
   }, [logedInUser?.id]);
-  // console.log(selectedUser);
   const messages = useMemo(() => {
     if (selectedUser?.type === "group") {
       return groupMessages;
@@ -425,7 +444,6 @@ const ChatPage = () => {
     ) {
       unReadedMessage.forEach((msg) => {
         socket.emit("status:Read", { messageId: msg?.id });
-        // msg.readSent = true;
       });
     }
   }, [
@@ -436,6 +454,7 @@ const ChatPage = () => {
     messages,
     selectedUser?.id,
   ]);
+  // console.log(messages);
   useEffect(() => {
     if (!logedInUser?.id || !selectedUser?.id) return;
     if (!selectedUser || selectedUser?.type === "group") return;
@@ -617,6 +636,43 @@ const ChatPage = () => {
     dispatch(getGroupMessages({ senderId, groupId, lastMessageId: null }));
   }, [selectedUser, logedInUser?.id]);
 
+  // console.log(groupMembers, "groumessages");
+  useEffect(() => {
+    if (!groupMessages || groupMessages?.length === 0) return;
+    const mylastMessageId = groupMembers?.find(
+      (m) => m?.user?.id === logedInUser?.id,
+    );
+
+    if (
+      groupMessages[groupMessages.length - 1]?.id ===
+      mylastMessageId?.lastSeenMessageId
+    )
+      return;
+    const groupId = Number(selectedUser?.id?.split("-")[1]);
+    const lastMessageId = groupMessages[groupMessages.length - 1]?.id;
+    console.log(groupMessages[groupMessages.length - 1]?.userId);
+    dispatch(
+      updateMembersLastMsgSeenId({
+        groupId,
+        lastMessageId,
+        userId: logedInUser?.id,
+      }),
+    )
+      .unwrap()
+      .then((res) => {
+        // console.log(res);
+        if (res.success) {
+          socket.emit("groupMsgSeen", {
+            groupId,
+            messageSenderUserId:
+              groupMessages[groupMessages.length - 1]?.userId,
+          });
+          console.log(groupMembers, "groupMem");
+          setGroupMembers(res?.memebers);
+        }
+      })
+      .catch((error) => [console.log(error)]);
+  }, [groupMessages, logedInUser?.id, selectedUser?.id]);
   const getDate = (date) => {
     const now = new Date(date);
     const hours24 = now.getHours();
@@ -639,7 +695,7 @@ const ChatPage = () => {
       setPrivateMessages((prev) => [...newMessages, ...prev]);
     }
     isFetchingOldRef.current = false;
-  }, [messageStore?.messages, messageStore?.loadType]);
+  }, [messageStore?.messages, messageStore?.loadType, messageStore?.isLoading]);
   const loadOldChats = (lastMessageId) => {
     if (!isFetchingOldRef.current) return;
     if (selectedUser?.type === "chat") {
@@ -670,18 +726,9 @@ const ChatPage = () => {
     if (!messages?.length) return;
 
     const el = chatTopRef.current;
-    // console.log(
-    //   "top",
-    //   el.scrollTop,
-    //   "scrollhright",
-    //   el.scrollHeight,
-    //   "clientheight",
-    //   el.clientHeight,
-    // );
     const atTop = el.scrollTop <= 20;
 
     if (!atTop) return;
-    // const isBottom=el.scrollHeight-el.scrollTop<=
     const firstMessageId = messages[0]?.id;
     if (!firstMessageId) return;
     isFetchingOldRef.current = true;
@@ -886,7 +933,7 @@ const ChatPage = () => {
                           <span className="text-[#574CD6] text-sm 2xl:text-base 3xl:text-lg">
                             {
                               groupMembers?.filter((m) =>
-                                onlineUsers.includes(String(m.id)),
+                                onlineUsers?.includes(String(m?.user?.id)),
                               ).length
                             }{" "}
                             online
@@ -917,7 +964,7 @@ const ChatPage = () => {
                                       : "text-gray-400"
                                   }`}
                                 >
-                                  {member.name}
+                                  {member?.user?.name}
                                 </span>
                                 {index < groupMembers?.length - 1 && ", "}
                               </span>
@@ -1227,6 +1274,18 @@ const ChatPage = () => {
                   </>
                 );
               })}
+              <GroupMessageSeen
+                lastMessageId={messages[messages.length - 1]?.id}
+                members={
+                  seenMembers && seenMembers.length !== 0
+                    ? seenMembers
+                    : groupMembers
+                }
+                // seenMembers={seenMembers}
+                messages={messages}
+                type={selectedUser?.type}
+                currentUserId={logedInUser?.id}
+              />
               <div ref={messageEndRef} className=""></div>
             </div>
 

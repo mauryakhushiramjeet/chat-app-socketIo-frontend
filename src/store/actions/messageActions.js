@@ -66,7 +66,26 @@ export const getGroupMessages = createAsyncThunk(
       const response = await axiosInstance.get("/getGroupMessages", {
         params: { senderId, groupId, lastMessageId },
       });
-     
+
+      return response.data;
+    } catch (error) {
+      console.log("AXIOS ERROR:", error.response);
+      return rejectWithValue(
+        error?.response?.data?.message || "Something went wrong",
+      );
+    }
+  },
+);
+export const updateMembersLastMsgSeenId = createAsyncThunk(
+  "get/memebr",
+  async ({ groupId, lastMessageId, userId }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put("/updateMemberLastMsgId", {
+        groupId,
+        lastMessageId,
+        userId,
+      });
+
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);

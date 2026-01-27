@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 // Import Swiper styles
@@ -275,7 +275,7 @@ const FilesView = ({ msg }) => {
               </div>
             )}
             {file?.fileType?.startsWith("video/") && (
-              <div className="max-h-[120px] lg:max-h-[200px] w-full  border border-gray-300/50 rounded-lg overflow- relative ">
+              <div className="max-h-[120px] lg:max-h-[200px] overflow-hidden w-full  border border-gray-300/50 rounded-lg overflow- relative ">
                 <video
                   ref={(el) => (videoRefs.current[file?.id] = el)}
                   src={file?.filePath}
