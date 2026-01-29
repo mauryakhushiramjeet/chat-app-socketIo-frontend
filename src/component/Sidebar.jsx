@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GoSearch } from "react-icons/go";
 import {
@@ -19,15 +19,18 @@ import { useNavigate } from "react-router-dom";
 import { createGroup } from "../store/actions/groupAction";
 import { getSidebarChatList } from "../store/actions/sidebarChatListActions";
 import Profile from "./Profile";
+import { ProfileContext } from "../utills/context/ProfileContext";
 
 const Sidebar = ({
   logedInUser,
+  typingInfo,
   setSelectedUser,
   selectedUser,
   socket,
   setLogedInUser,
   onlineUsers,
   setShowUserChat,
+  typingUserId,
 }) => {
   const [searchText, setSearchText] = useState("");
   const [seratchingUser, setSearchingUser] = useState([]);
@@ -40,7 +43,7 @@ const Sidebar = ({
   const [groupImage, setGroupImage] = useState({ image: "", file: null });
   const groupFileInputRef = useRef(null);
   const usersRef = useRef([]);
-
+  const { showProfile, setShowProfile } = useContext(ProfileContext);
   const [initialProfile, setInitialProfile] = useState({
     name: logedInUser?.name,
     about: "Available",
@@ -54,7 +57,6 @@ const Sidebar = ({
     file: "",
   });
   const sidebarChatListStore = useSelector((store) => store.sidebarChatList);
-  const [showProfile, setShowProfile] = useState(false);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const storeFriends = useSelector((store) => store.friends);
@@ -461,6 +463,8 @@ const Sidebar = ({
     setSelectedUser(userCoversation);
     setShowUserChat(true);
   };
+  // console.log(sortedUsers);
+  console.log(typingInfo, "typing info", typingUserId, "typing userid");
   return (
     <div className="w-full bg-[#574CD6] text-white flex flex-col h-screen border-r border-white/10 shadow-2xl relative overflow-hidden">
       {/* create group section */}
@@ -796,26 +800,6 @@ const Sidebar = ({
             }`}
           >
             <div className="relative">
-              {/* {userCoversation?.image ? (
-                <img
-                  src={userCoversation?.image}
-                  className={`w-12 h-12 rounded-full border-2 object-cover ${
-                    selectedUser?.id === userCoversation?.chatUser?.id
-                      ? "border-[#574CD6]/20"
-                      : "border-white/10"
-                  }`}
-                />
-              ) : (
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
-                    selectedUser?.id === userCoversation?.id
-                      ? "bg-[#574CD6] text-white"
-                      : "bg-white/20"
-                  }`}
-                >
-                  {getdefaultProfile(userCoversation?.name)}
-                </div>
-              )} */}
               <Profile
                 getdefaultProfile={getdefaultProfile}
                 selectedUser={userCoversation}
@@ -846,7 +830,11 @@ const Sidebar = ({
                       : "text-white/50"
                   }`}
                 >
-                  {userCoversation?.lastMessage}
+                  {typingUserId[`chat_${userCoversation?.id}`] &&
+                  userCoversation?.type === "chat" &&
+                  typingInfo[`chat_${userCoversation?.id}`]?.type === "chat"
+                    ? "Typing..."
+                    : userCoversation?.lastMessage}
                 </p>
                 {userCoversation?.lastMessageCreatedAt && (
                   <p className="opacity-70 ml-2 shrink-0 text-xs 2xl:text-sm 3xl:text-lg">

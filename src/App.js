@@ -7,22 +7,19 @@ import LoginPage from "./pages/LogInPage";
 import PrivateRoute from "./routes/PrivateRoute";
 import PublicRoute from "./routes/PublicRoute";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import AuthForm from "./pages/AuthForm";
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<PublicRoute />}>
-          {" "}
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/emailVerify" element={<VerifyEmailPage />} />
+          <Route path="/" element={<AuthForm />} />
         </Route>
         <Route element={<PrivateRoute />}>
           <Route path="/chat" element={<ChatPage />} />
         </Route>
-        <Route path="/signup" element={<LoginPage />} />
-
-        {/* 404 */}
       </Routes>
       <ToastContainer position="top-center" autoClose={3000} />
     </BrowserRouter>

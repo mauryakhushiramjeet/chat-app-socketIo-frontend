@@ -5,7 +5,7 @@ export const getAllMessages = createAsyncThunk(
   "get/messages",
   async ({ senderId, receiverId, lastMessageId }, { rejectWithValue }) => {
     try {
-      console.log(senderId, receiverId, lastMessageId, "idssss");
+      // console.log(senderId, receiverId, lastMessageId, "idssss");
       const response = await axiosInstance.get("/getMessages", {
         params: { senderId, receiverId, lastMessageId },
       });

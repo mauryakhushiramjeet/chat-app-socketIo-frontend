@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { RiUserLine } from "react-icons/ri";
+import { ProfileContext } from "../utills/context/ProfileContext";
 
 const ChatOptions = ({
   open,
@@ -11,6 +12,8 @@ const ChatOptions = ({
   messages,
 }) => {
   const optionsRef = useRef(null);
+  const { showProfile, setShowProfile } = useContext(ProfileContext);
+
   useEffect(() => {
     const toggleOption = (e) => {
       if (optionsRef.current && !optionsRef.current.contains(e.target)) {
@@ -79,7 +82,13 @@ const ChatOptions = ({
 
       {/* You can easily add more options here later */}
 
-      <button className="group w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-50">
+      <button
+        onClick={() => {
+          setShowProfile(true);
+          setShowChatOptions(false);
+        }}
+        className="group w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-50"
+      >
         <RiUserLine
           size={18}
           className="text-gray-400 group-hover:text-[#5449cf]"

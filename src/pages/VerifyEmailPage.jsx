@@ -1,29 +1,44 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-import { verifyOtp } from "../store/actions/verifyOtpActions";
+import {
+  resendEmailVerification,
+  resendMailForgetPassword,
+  verifyOtp,
+} from "../store/actions/verifyOtpActions";
 import { useNavigate } from "react-router-dom";
 
-const VerifyEmailPage = ({ onResend }) => {
+const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
   const [otp, setOtp] = useState(new Array(6).fill(""));
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(30);
-  const inputRefs = useRef([]);
   const [email, setEmail] = useState("");
+  const [errorOtp, setOtpError] = useState("");
+  const [timer, setTimer] = useState(300);
+  const [resendCooldown, setResendCooldown] = useState(30);
+  const inputRefs = useRef([]);
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    const userDetails = JSON.parse(localStorage.getItem("userData"));
-    setEmail(userDetails?.email);
-  }, []);
   useEffect(() => {
     if (timer > 0) {
       const interval = setInterval(() => setTimer((t) => t - 1), 1000);
       return () => clearInterval(interval);
     }
   }, [timer]);
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const interval = setInterval(() => setResendCooldown((t) => t - 1), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [resendCooldown]);
 
+  useEffect(() => {
+    const loggedUserDetailes = JSON.parse(localStorage.getItem("userData"));
+    console.log(loggedUserDetailes);
+    if (loggedUserDetailes?.email) {
+      setEmail(loggedUserDetailes?.email);
+    }
+  }, []);
+  // console.log(email);
   const handleChange = (element, index) => {
     if (isNaN(element.value)) return false;
 
@@ -31,14 +46,12 @@ const VerifyEmailPage = ({ onResend }) => {
     newOtp[index] = element.value;
     setOtp(newOtp);
 
-    // Auto-focus next input
     if (element.value !== "" && index < 5) {
       inputRefs.current[index + 1].focus();
     }
   };
 
   const handleKeyDown = (e, index) => {
-    // Move focus back on backspace
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1].focus();
     }
@@ -46,33 +59,93 @@ const VerifyEmailPage = ({ onResend }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (timer === 0) {
+      setOtpError("OTP has expired. Please resend code.");
+      return;
+    }
     const otpValue = otp.join("");
     if (otpValue.length < 6) {
-      toast.error("Please enter the complete 6-digit code");
+      setOtpError("Please enter the complete 6-digit code");
       return;
     }
     setLoading(true);
-    const formData = new FormData();
-    formData.append("email", email);
-    formData.append("otp", otpValue);
-    dispatch(verifyOtp(formData))
+    const data = { email, otp: otpValue };
+    dispatch(verifyOtp(data))
       .unwrap()
       .then((res) => {
-        // console.log(res);
         if (res.success) {
           toast.success(res.message);
           setLoading(false);
-          navigate("/");
+          if (currentForm === "signup") {
+            localStorage.setItem("userData", JSON.stringify(res.data));
+            setCurrentForm("login");
+
+            setIsOtpSend(false);
+          }
+          if (currentForm === "forget-password") {
+            setCurrentForm("reset-password");
+            setIsOtpSend(false);
+          }
         } else {
           toast.error(res.message);
+          setLoading(false);
         }
+      })
+      .catch((error) => {
+        setLoading(false);
+        console.log(error);
+        toast.error(error.message);
       });
   };
 
+  const handleResend = () => {
+    if (currentForm === "login") {
+      // for email verify resend mail
+      dispatch(resendEmailVerification(email))
+        .unwrap()
+        .then((res) => {
+          if (res.success) {
+            toast.success(res.message);
+            setTimer(300);
+            setResendCooldown(30);
+            setOtp(new Array(6).fill(""));
+          } else {
+            toast.error(res.message);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+    if (currentForm === "forget-password") {
+      console.log("jkhdsjha,email", email);
+      dispatch(resendMailForgetPassword(email))
+        .unwrap()
+        .then((res) => {
+          if (res.success) {
+            toast.success(res.message);
+            setTimer(300);
+            setResendCooldown(30);
+            setOtp(new Array(6).fill(""));
+          } else {
+            toast.error(res.message);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+  };
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+  };
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-4 font-sans">
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
-        {/* Icon */}
         <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-6">
           <svg
             className="w-8 h-8 text-indigo-600"
@@ -89,35 +162,60 @@ const VerifyEmailPage = ({ onResend }) => {
           </svg>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Verify Email</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          {currentForm === "forget-password"
+            ? "Reset Password"
+            : "Verify Email"}
+        </h1>
         <p className="text-gray-500 mb-8">
           We've sent a 6-digit verification code to <br />
-          {/* <span className="font-semibold text-gray-700">{email}</span> */}
+          <span className="font-semibold text-gray-700">{email}</span>
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* OTP Input Group */}
           <div className="flex justify-between gap-2">
             {otp.map((data, index) => (
               <input
                 key={index}
                 type="text"
                 maxLength="1"
+                disabled={timer === 0} // Disable inputs if expired
                 ref={(el) => (inputRefs.current[index] = el)}
                 value={data}
                 onChange={(e) => handleChange(e.target, index)}
                 onKeyDown={(e) => handleKeyDown(e, index)}
-                className="w-12 h-14 border-2 rounded-xl text-center text-xl font-bold text-indigo-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                className={`w-12 h-14 border-2 rounded-xl text-center text-xl font-bold outline-none transition-all ${
+                  timer === 0
+                    ? "bg-gray-100 border-gray-200 text-gray-400"
+                    : "text-indigo-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                }`}
               />
             ))}
           </div>
+          {errorOtp.trim() !== "" && (
+            <p className="text-red-600 text-sm">{errorOtp}</p>
+          )}
+          {/* Expiration Message */}
+          {timer === 0 ? (
+            <p className="text-red-500 text-sm font-medium">
+              OTP has expired. Please click "Resend Code" below.
+            </p>
+          ) : (
+            <p className="text-red-500 text-sm font-medium">
+              Otpis expireIn : {formatTime(timer)}
+            </p>
+          )}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition-all font-semibold shadow-lg shadow-indigo-200"
+            disabled={loading || timer === 0}
+            className={`w-full py-3 rounded-xl transition-all font-semibold shadow-lg ${
+              timer === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200"
+            }`}
           >
-            {loading ? "Verifying..." : "Verify Account"}
+            {loading ? "Verifying..." : "Verify Code"}
           </button>
         </form>
 
@@ -125,18 +223,18 @@ const VerifyEmailPage = ({ onResend }) => {
           <p className="text-gray-500">
             Didn't receive the code?{" "}
             <button
-              disabled={timer > 0}
-              onClick={() => {
-                onResend();
-                setTimer(30);
-              }}
-              className={`font-semibold ${
-                timer > 0
+              type="button"
+              disabled={resendCooldown > 0}
+              onClick={handleResend}
+              className={`font-bold transition-all ${
+                resendCooldown > 0
                   ? "text-gray-400 cursor-not-allowed"
-                  : "text-indigo-600 hover:underline"
+                  : "text-indigo-600 hover:text-indigo-800 underline decoration-2 underline-offset-4"
               }`}
             >
-              {timer > 0 ? `Resend in ${timer}s` : "Resend Code"}
+              {resendCooldown > 0
+                ? `Resend in ${resendCooldown}s`
+                : "Resend Code Now"}
             </button>
           </p>
         </div>

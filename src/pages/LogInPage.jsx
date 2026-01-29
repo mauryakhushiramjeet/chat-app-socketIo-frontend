@@ -1,48 +1,48 @@
-// SignupPage.jsx
-import { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useFormik } from "formik";
 import { loginUser } from "../store/actions/userActions";
+import { loginSchema } from "../utills/authSchema";
 
-const LoginPage = () => {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const initialValues = {
+    email: "",
+    password: "",
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const { handleChange, handleBlur, handleSubmit, values, errors, touched } =
+    useFormik({
+      initialValues,
+      validationSchema: loginSchema,
+      onSubmit: async (values) => {
+        setLoading(true);
 
-    try {
-      const data = {
-        email: form.email,
-        password: form.password,
-      };
+        try {
+          const res = await dispatch(
+            loginUser({ email: values.email, password: values.password })
+          ).unwrap();
 
-      const res = await dispatch(loginUser(data)).unwrap();
-      console.log(res);
-      if (res.success) {
-        toast.success(res.message);
-        localStorage.setItem("userData", JSON.stringify(res?.user));
-        navigate("/chat");
-      } else {
-        toast.error(res.message);
-      }
-    } catch (err) {
-      console.log(err);
-      toast.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+          if (res.success) {
+            toast.success(res.message);
+            localStorage.setItem("userData", JSON.stringify(res.user));
+            navigate("/chat");
+          } else {
+            toast.error(res.message);
+          }
+        } catch (err) {
+          console.log(err);
+          toast.error(err);
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-4">
@@ -53,31 +53,39 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Email
-            </label>
+            <label className="block text-gray-700 font-medium mb-1">Email</label>
             <input
               type="email"
               name="email"
-              value={form.email}
+              value={values.email}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              onBlur={handleBlur}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                touched.email && errors.email ? "border-red-500" : ""
+              }`}
               placeholder="you@example.com"
             />
+            {touched.email && errors.email && (
+              <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Password
-            </label>
+            <label className="block text-gray-700 font-medium mb-1">Password</label>
             <input
               type="password"
               name="password"
-              value={form.password}
+              value={values.password}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              onBlur={handleBlur}
+              className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                touched.password && errors.password ? "border-red-500" : ""
+              }`}
               placeholder="Enter your password"
             />
+            {touched.password && errors.password && (
+              <p className="text-red-600 text-sm mt-1">{errors.password}</p>
+            )}
           </div>
 
           <button
@@ -91,12 +99,24 @@ const LoginPage = () => {
 
         <p className="text-center text-gray-500 mt-4">
           Create new account?{" "}
-          <a href="/signup" className="text-indigo-600 hover:underline">
+          <span
+            onClick={() => setCurrentForm("signup")}
+            className="text-indigo-600 hover:underline cursor-pointer"
+          >
             Signup
-          </a>
+          </span>
         </p>
+        <div className="flex items-center justify-center">
+          <p
+            onClick={() => setCurrentForm("forget-password")}
+            className="w-fit text-center text-sm text-indigo-600 mt-2 cursor-pointer hover:underline"
+          >
+            Forgot Password?
+          </p>
+        </div>
       </div>
     </div>
   );
 };
+
 export default LoginPage;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import TypingIndicator from "../component/TypingIndicator";
 import { LuSmilePlus } from "react-icons/lu";
 import { ImAttachment } from "react-icons/im";
@@ -12,9 +12,13 @@ import { LuLoaderCircle } from "react-icons/lu";
 import { getdefaultProfile } from "../helper/filePre";
 import { getDate } from "../helper/getDate";
 import ImojiPiker from "./ImojiPiker";
+import { loginUser } from "../store/actions/userActions";
 
 const InputBox = ({
   typingUserId,
+  typingInfo,
+  logedInUser,
+  groupMembers,
   selectedUser,
   setMessage,
   message,
@@ -35,8 +39,11 @@ const InputBox = ({
   const fileRef = useRef(null);
   const fileErrorRef = useRef(null);
   const fileBottomRef = useRef(null);
+  // const { receiverId, groupId } = typingInfo;
   // loading = true;
   // const loading = true;
+  console.log(typingUserId, typingInfo, "groupIf", groupMembers);
+  console.log(typingInfo);
   useEffect(() => {
     const handleImoziPickerClick = (e) => {
       if (
@@ -92,24 +99,81 @@ const InputBox = ({
       }, [3000]);
     }
   }, [fileLimitError]);
+  const groupMemberTyping = useMemo(() => {
+    if (selectedUser?.type === "group") {
+      const data = groupMembers.filter(
+        (m) => typingUserId[`group_${m?.user?.id.toString()}`] === true,
+      );
+      const groupId = selectedUser?.id.split("-")[1];
+      return { ...data, groupId };
+    }
+  }, [selectedUser?.type, typingUserId, groupMembers]);
+  // console.log(
+  //   groupMemberTyping?.[0]?.user?.image,
+  //   typingInfo?.receiverId === logedInUser?.id &&
+  //     Number(typingInfo?.groupId) ===
+  //       Number(selectedUser?.id?.split("-")[1]),
+  // );
+  // console.log(typingUserId, "userid object");
+  // console.log(typingInfo, "TypingInfo");
+  // console.log(
+  //   groupMemberTyping,
+  //   "groupTyping filter info",
+  //   groupMembers,
+  //   "this group memebers",
+  // );
+  // console.log(
+  //   selectedUser?.type==="group"&&
+  //   typingInfo[`group_${selectedUser?.id?.split("-")[1].toString()}`]
+  //         ?.receiverId === logedInUser?.id &&
+  //       Number(
+  //         typingInfo[`group_${selectedUser?.id?.split("-")[1].toString()}`]
+  //           ?.groupId,
+  //       ) === Number(selectedUser?.id?.split("-")[1])
+  // );
   return (
     <div className="">
-      {typingUserId === selectedUser?.id && (
-        <div className="flex gap-1 items-center pb-[2px] opacity-100">
-          {selectedUser?.image && selectedUser?.image?.trim() !== "" ? (
-            <img
-              src={selectedUser?.image}
-              alt="User"
-              className="w-6 3xl:w-10 h-6 3xl:h-10 rounded-full object-cover ring-2 ring-gray-50"
-            />
-          ) : (
-            <div className="w-8 3xl:w-10 h-8 3xl:h-10 rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
-              {getdefaultProfile(selectedUser?.name)}
-            </div>
-          )}
-          <TypingIndicator />
-        </div>
-      )}
+      {selectedUser?.type === "group" &&
+        typingInfo[`group_${selectedUser?.id?.split("-")[1].toString()}`]
+          ?.receiverId === logedInUser?.id &&
+        Number(
+          typingInfo[`group_${selectedUser?.id?.split("-")[1].toString()}`]
+            ?.groupId,
+        ) === Number(selectedUser?.id?.split("-")[1]) && (
+          <div className="flex gap-1 items-center pb-[10px] md:pb-[2px] opacity-100">
+            {groupMemberTyping?.[0]?.user?.image ? (
+              <img
+                src={groupMemberTyping[0]?.user?.image}
+                alt="User"
+                className="w-6 3xl:w-10 h-6 3xl:h-10 rounded-full object-cover ring-2 ring-gray-50"
+              />
+            ) : (
+              <div className="hidden md:flex w-8 3xl:w-10 h-8 3xl:h-10 rounded-full bg-indigo-50 items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
+                {getdefaultProfile(groupMemberTyping[0]?.user?.name)}
+              </div>
+            )}
+            <TypingIndicator />
+          </div>
+        )}
+
+      {/* One-to-one chat typing indicator */}
+      {typingInfo?.[`chat_${selectedUser?.id}`]?.type === "chat" &&
+        typingUserId[`chat_${selectedUser?.id}`] && (
+          <div className="flex gap-1 items-center pb-[10px] md:pb-[2px] opacity-100">
+            {selectedUser?.image ? (
+              <img
+                src={selectedUser.image}
+                alt="User"
+                className="w-6 3xl:w-10 h-6 3xl:h-10 rounded-full object-cover ring-2 ring-gray-50"
+              />
+            ) : (
+              <div className="hidden md:flex w-8 3xl:w-10 h-8 3xl:h-10 rounded-full bg-indigo-50 items-center justify-center text-[#574CD6] font-bold border border-indigo-100">
+                {getdefaultProfile(selectedUser.name)}
+              </div>
+            )}
+            <TypingIndicator />
+          </div>
+        )}
       <div className="flex gap-2 items-center">
         <div
           className="relative  w-full rounded-xl border-[1px] border-gray-300 focus-within:border-b-2 2xl:focus-within:border-b-4 focus-within:border-b-[#786FDD]"
@@ -244,7 +308,7 @@ const InputBox = ({
               }
             }}
             placeholder="Type a message..."
-            rows={0.5}
+            // rows={0.5}
             // cols={1}
             className="w-full text-sm 2xl:text-base 3xl:text-xl hide-scrollbar rounded-xl px-3 pt-3  resize-none focus:outline-none max-h-[200px] overflow-y-auto"
           />{" "}

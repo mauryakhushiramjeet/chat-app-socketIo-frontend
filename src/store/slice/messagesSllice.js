@@ -7,6 +7,7 @@ const getAllMessagesSlice = createSlice({
     loadType: null,
     isLoading: false,
     isError: false,
+    fisrtMessageId: null,
   },
   reducers: {},
   extraReducers: (building) => {
@@ -20,6 +21,7 @@ const getAllMessagesSlice = createSlice({
         state.isLoading = false;
         state.messages = action.payload.messages;
         state.loadType = action.payload.loadType;
+        state.fisrtMessageId = action.payload.firstMessageId;
       })
 
       .addCase(getAllMessages.rejected, (state, action) => {
