@@ -15,7 +15,7 @@ const Profile = ({ getdefaultProfile, selectedUser, className }) => {
       ) : (
         // </div>
         <div
-          className={`h-full w-full  rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100 text-2xl  ${className}`}
+          className={`h-full w-full  rounded-full bg-indigo-50 flex items-center justify-center text-[#574CD6] font-bold border border-indigo-100 text-base 2xl:text-xl 3xl:text-2xl   ${className}`}
         >
           {getdefaultProfile(selectedUser?.name)}
         </div>

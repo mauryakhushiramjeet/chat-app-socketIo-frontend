@@ -34,6 +34,7 @@ import ChatMessageShimmer from "../component/ChatMessageShimmer ";
 import { getDateSeperator } from "../helper/getDateSeparator";
 import ChatOptions from "../component/ChatOptions";
 import GroupMessageSeen from "../component/GroupMessageSeen ";
+import MessageStatus from "../helper/chatPageHelper";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -69,6 +70,7 @@ const ChatPage = () => {
   const messageReplyRef = useRef([]);
   const deleteMessageIdRef = React.useRef(null);
   const isFetchingOldRef = useRef(false);
+  const TypingTimeOut = useRef(null);
 
   const messagesRef = useRef([]);
 
@@ -157,26 +159,26 @@ const ChatPage = () => {
         const data = {
           receiverId,
           groupId,
+          senderId,
           type,
         };
         console.log(senderId, receiverId, type, groupId, "in group signal");
 
-        setTypingInfo((prev) => ({
-          ...prev,
-          [`group_${groupId}`]: data,
-        }));
-      } else {
-        console.log(
-          "gated typing signal for chat sender",
-          senderId,
-          "reciver",
-          receiverId,
-          "type",
-          type,
-        );
-        // if (senderId !== currentSelectedUser.id) return;
+        setTypingInfo((prev) => {
+          const groupKey = `group_${groupId}`;
+          const existing = prev[groupKey] || [];
+          const group_sender_alreadyExist = existing?.find(
+            (s) => Number(s?.senderId) === Number(senderId),
+          );
 
-        // console.log("typing", type);
+          return {
+            ...prev,
+            [groupKey]: group_sender_alreadyExist
+              ? existing.map((s) => (s.senderId === senderId ? data : s))
+              : [...existing, data],
+          };
+        });
+      } else {
         const data = {
           receiverId,
           groupId: null,
@@ -194,14 +196,35 @@ const ChatPage = () => {
       ({ senderId, receiverId, type, groupId }) => {
         console.log("get stop signal", senderId, receiverId, type, groupId);
         if (receiverId === logedInUser?.id) {
-          setTypingUserId((prev) => ({
-            ...prev,
-            [`${type}_${senderId}`]: false,
-          }));
-          setTypingInfo((prev) => ({
-            ...prev,
-            [`${type}_${groupId}`]: null,
-          }));
+          if (type === "group") {
+            setTypingUserId((prev) => ({
+              ...prev,
+              [`${type}_${senderId}`]: false,
+            }));
+            setTypingInfo((prev) => {
+              const groupKey = `group_${groupId}`;
+              const existing = prev[groupKey] || [];
+              const group_sender_alreadyExist = existing?.find(
+                (s) => s?.senderId === senderId,
+              );
+
+              return {
+                ...prev,
+                [groupKey]: group_sender_alreadyExist
+                  ? existing?.filter((s) => s.senderId !== senderId)
+                  : existing,
+              };
+            });
+          } else {
+            setTypingUserId((prev) => ({
+              ...prev,
+              [`${type}_${senderId}`]: false,
+            }));
+            setTypingInfo((prev) => ({
+              ...prev,
+              [`chat_${senderId}`]: null,
+            }));
+          }
         }
       },
     );
@@ -254,6 +277,7 @@ const ChatPage = () => {
         //   replyMessage,
         // );
         const currentSelectedUser = selectedUserRef.current;
+        console.log("current selected user", currentSelectedUser);
         setPrivateMessages((prev) => {
           const updated = prev?.map((msg) =>
             msg?.clientMessageId === clientMessageId
@@ -281,15 +305,26 @@ const ChatPage = () => {
           return updated;
         });
         const currentOnlineUser = onlineUserRef.current;
+        const selectedUser = selectedUserRef.current;
+        console.log("ref selected user", selectedUser, selectedUser.mainId);
         const recieverSocketId = currentOnlineUser.includes(
           String(logedInUser?.id),
         );
 
         if (response?.receiverId === logedInUser?.id && recieverSocketId) {
           if (currentSelectedUser?.id === response?.senderId) {
-            newSocket.emit("status:Read", { messageId: response?.id });
+            console.log("rged ", selectedUser.mainId);
+            newSocket.emit("status:Read", {
+              messageId: response?.id,
+              conversationId: selectedUser?.mainId,
+            });
           } else {
-            newSocket.emit("status:delivered", { messageId: response?.id });
+            console.log("deliver ", selectedUser.mainId);
+
+            newSocket.emit("status:delivered", {
+              messageId: response?.id,
+              conversationId: selectedUser?.mainId,
+            });
           }
         }
       },
@@ -312,8 +347,16 @@ const ChatPage = () => {
     newSocket.on(
       "message:deleted",
       ({ messageId, type, chatType, lastMessageCreatedAt }) => {
+        console.log(
+          "get delete signal",
+          messageId,
+          "current deleted",
+          type,
+          chatType,
+          lastMessageCreatedAt,
+        );
         const curtrentSelectedUser = selectedUserRef.current;
-        const currentDeletedMessageId = deleteMessageIdRef.current;
+        const currentDeletedMessageId = messageId;
         const currentMessages = messagesRef.current;
 
         if (type === "FOR_EVERYONE") {
@@ -350,7 +393,6 @@ const ChatPage = () => {
               });
             });
           }
-          // setDeleteMessageId(null);
         }
         if (type === "FOR_ME") {
           if (chatType === "group") {
@@ -371,6 +413,7 @@ const ChatPage = () => {
             );
           }
         }
+        console.log("reac here");
         if (isLastMessageDeleted(currentDeletedMessageId, currentMessages)) {
           newSocket.emit("sidebar:update", {
             chatType: curtrentSelectedUser?.type,
@@ -379,6 +422,7 @@ const ChatPage = () => {
             messageId: currentDeletedMessageId,
             chatListId: curtrentSelectedUser?.mainId,
           });
+          console.log("sendSidebar signal");
         }
         setIsModelOpen(false);
       },
@@ -515,48 +559,44 @@ const ChatPage = () => {
 
   const handleMessage = (e) => {
     setMessage(e.target.value);
-    if (e.target.value) {
-      socket.emit("typing", {
+    socket.emit("typing", {
+      senderId: logedInUser?.id,
+      receiverId: selectedUser?.id,
+      type: selectedUser?.type,
+      groupId:
+        selectedUser?.type === "group" ? selectedUser?.id.split("-")[1] : null,
+    });
+    console.log("send signal typing ");
+    if (TypingTimeOut.current) {
+      console.log("clear time out");
+      clearTimeout(TypingTimeOut.current);
+    }
+    // setTimeout(() => {
+    //   socket.emit("stopTyping", {
+    //     senderId: logedInUser?.id,
+    //     receiverId: selectedUser?.id,
+    //     type: selectedUser?.type,
+    //     groupId:
+    //       selectedUser?.type === "group"
+    //         ? Number(selectedUser?.id?.split("-")[1])
+    //         : null,
+    //   });
+    // }, 1000);
+
+    TypingTimeOut.current = setTimeout(() => {
+      socket.emit("stopTyping", {
         senderId: logedInUser?.id,
         receiverId: selectedUser?.id,
         type: selectedUser?.type,
         groupId:
           selectedUser?.type === "group"
-            ? selectedUser?.id.split("-")[1]
+            ? Number(selectedUser?.id?.split("-")[1])
             : null,
       });
-      console.log("send signal typing ");
-    } else {
-      setTimeout(() => {
-        socket.emit("stopTyping", {
-          senderId: logedInUser?.id,
-          receiverId: selectedUser?.id,
-          type: selectedUser?.type,
-          groupId:
-            selectedUser?.type === "group"
-              ? Number(selectedUser?.id?.split("-")[1])
-              : null,
-        });
-      }, 1000);
-    }
+      console.log("send stop signal");
+    }, 3000);
   };
-  const emitStopTyping = () => {
-    socket.emit("stopTyping", {
-      senderId: logedInUser?.id,
-      receiverId: selectedUser?.id,
-      type: selectedUser?.type,
-      groupId:
-        selectedUser?.type === "group"
-          ? Number(selectedUser?.id?.split("-")[1])
-          : null,
-    });
 
-    console.log("send signal stop typing (user changed)");
-  };
-  useEffect(()=>{
-if(!socket) return
-emitStopTyping()
-},[selectedUser,socket])
   useEffect(() => {
     selectedUserRef.current = selectedUser;
     firstLoadRef.current = true;
@@ -568,6 +608,12 @@ emitStopTyping()
     setPrivateMessages([]);
     setFirstMessageId(null);
     setPrevHeight(null);
+  }, [selectedUser]);
+
+  useLayoutEffect(() => {
+    if (chatTopRef.current) {
+      chatTopRef.current.scrollTop = 0;
+    }
   }, [selectedUser]);
   const handleSendMessage = () => {
     if (message.trim() === "" && selectedFiles.length === 0) return;
@@ -635,6 +681,11 @@ emitStopTyping()
     socket.emit("stopTyping", {
       senderId: logedInUser?.id,
       receiverId: selectedUser?.id,
+      type: selectedUser?.type,
+      groupId:
+        selectedUser?.type === "group"
+          ? Number(selectedUser?.id?.split("-")[1])
+          : null,
     });
   };
 
@@ -656,7 +707,6 @@ emitStopTyping()
   useEffect(() => {
     if (groupMessageStore?.isError || !groupMessageStore?.messages) return;
     setIsChatLoading(groupMessageStore?.isLoading);
-
     if (groupMessageStore?.fisrtMessageId) {
       setFirstMessageId(groupMessageStore?.fisrtMessageId);
     }
@@ -716,7 +766,6 @@ emitStopTyping()
     )
       .unwrap()
       .then((res) => {
-        // console.log(res);
         if (res.success) {
           socket.emit("groupMsgSeen", {
             groupId,
@@ -737,11 +786,14 @@ emitStopTyping()
 
     return `${hours12}:${minutes} ${period}`;
   };
+  console.log(isChatLoading, "is chatLo");
   useEffect(() => {
-    if (!messageStore?.messages?.length) return;
+    if (!messageStore) return;
+    console.log(messageStore);
+
+    if (messageStore?.messages?.length === 0) return;
     setIsChatLoading(messageStore?.isLoading);
 
-    // console.log(messageStore);
     if (messageStore?.fisrtMessageId) {
       setFirstMessageId(messageStore?.fisrtMessageId);
     }
@@ -794,22 +846,21 @@ emitStopTyping()
     }
   };
 
-  // 1. Change this useEffect to useLayoutEffect
-  useLayoutEffect(() => {
-    if (!chatTopRef.current || !isPagination || !prevHeight.prevScrollHeight)
-      return;
+  // useLayoutEffect(() => {
+  //   if (!chatTopRef.current || !isPagination || !prevHeight.prevScrollHeight)
+  //     return;
 
-    const el = chatTopRef.current;
+  //   const el = chatTopRef.current;
 
-    // Calculate how much the height increased
-    const heightDifference = el.scrollHeight - prevHeight.prevScrollHeight;
+  //   // Calculate how much the height increased
+  //   const heightDifference = el.scrollHeight - prevHeight.prevScrollHeight;
 
-    // Maintain the scroll position relative to the previous "top" message
-    el.scrollTop = prevHeight.prevScrollTop + heightDifference;
+  //   // Maintain the scroll position relative to the previous "top" message
+  //   el.scrollTop = prevHeight.prevScrollTop + heightDifference;
 
-    // Reset pagination flag
-    setIsPagination(false);
-  }, [messages, isPagination]); // Trigger when messages update after a pagination call
+  //   // Reset pagination flag
+  //   setIsPagination(false);
+  // }, [messages, isPagination]);
   const handleScroll = () => {
     if (!chatTopRef.current) return;
     if (isFetchingOldRef.current) return;
@@ -837,18 +888,34 @@ emitStopTyping()
     if (!messageEndRef.current || !chatTopRef.current) return;
     if (!messages?.length) return;
     const el = chatTopRef.current;
-
+    // if (isPagination) return;
     if (firstLoadRef.current) {
-      messageEndRef.current.scrollIntoView({ behavior: "auto" });
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          if (messageEndRef.current && chatTopRef.current) {
+            console.log(firstLoadRef.current, "is firt load");
+            console.log("scroll auto happedn ");
+
+            messageEndRef.current.scrollIntoView({ behavior: "auto" });
+          }
+        }, 0);
+      });
       firstLoadRef.current = false;
       return;
     }
+
     const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
     if (isAtBottom) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-  // console.log(onlineUsers);
+  console.log(onlineUsers);
+
+  // useEffect(() => {
+  //   // const el = chatTopRef.current;
+  //   if (!messageEndRef.current) return;
+  //   messageEndRef.current.scrollIntoView({ behavior: "auto" });
+  // }, []);
   const handleDeleteForMe = () => {
     const deletedMessageId = isModelOpen;
 
@@ -865,6 +932,7 @@ emitStopTyping()
   };
 
   const isLastMessageDeleted = (messageId, currentMessages) => {
+    console.log(messageId, "last deletemessages", currentMessages);
     const selectedUser = selectedUserRef?.current;
     if (!messageId || !currentMessages || currentMessages.length === 0)
       return false;
@@ -881,6 +949,7 @@ emitStopTyping()
     if (!deleteMessage || !lastMessage) {
       return false;
     }
+    console.log(deleteMessage.id === lastMessage.id, "oshksk");
     return deleteMessage.id === lastMessage.id;
   };
 
@@ -895,20 +964,20 @@ emitStopTyping()
     });
     setIsModelOpen(null);
   };
-  const MessageStatus = ({ status }) => {
-    switch (status) {
-      case "Pending":
-        return <IoTimeOutline />;
-      case "Send":
-        return <IoCheckmark />;
-      case "Delivered":
-        return <IoCheckmarkDone />;
-      case "Read":
-        return <IoCheckmarkDone className="text-cyan-400" />;
-      default:
-        return null;
-    }
-  };
+  // const MessageStatus = ({ status }) => {
+  //   switch (status) {
+  //     case "Pending":
+  //       return <IoTimeOutline />;
+  //     case "Send":
+  //       return <IoCheckmark />;
+  //     case "Delivered":
+  //       return <IoCheckmarkDone />;
+  //     case "Read":
+  //       return <IoCheckmarkDone className="text-cyan-400" />;
+  //     default:
+  //       return null;
+  //   }
+  // };
   const handleMessageEdit = (editText, editMessageId, file) => {
     setEditMessageId(editMessageId);
     setEditedMesage({ editText, file });

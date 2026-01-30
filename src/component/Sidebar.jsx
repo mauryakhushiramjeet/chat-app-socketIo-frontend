@@ -20,6 +20,7 @@ import { createGroup } from "../store/actions/groupAction";
 import { getSidebarChatList } from "../store/actions/sidebarChatListActions";
 import Profile from "./Profile";
 import { ProfileContext } from "../utills/context/ProfileContext";
+import MessageStatus from "../helper/chatPageHelper";
 
 const Sidebar = ({
   logedInUser,
@@ -181,10 +182,12 @@ const Sidebar = ({
     }
     return "Tap to chat";
   };
+  // console.log(selectedUser);
   useEffect(() => {
     if (!sidebarChatListStore?.isError && !sidebarChatListStore?.isLoading) {
       // console.log(
       //   sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions,
+      //   "user",
       // );
       const normalizedUsers = (
         sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions || []
@@ -196,8 +199,10 @@ const Sidebar = ({
           name: item.type === "group" ? item.name : item.chatUser?.name,
           image: item.type === "group" ? item.groupImage : item.chatUser?.image,
           lastMessage: getSidebarLastMessage(item),
-
+          status: item?.type === "group" ? "Send" : item.status,
           lastMessageId: item.lastMessageId,
+          messageSenderId:
+            item.type === "group" ? logedInUser.id : item?.messageSenderId,
           LastActiveAt:
             item.type === "group" ? null : item.chatUser?.LastActiveAt,
           lastMessageCreatedAt: item.lastMessageCreatedAt || null,
@@ -265,6 +270,36 @@ const Sidebar = ({
         });
       },
     );
+    socket.on("status:Read", ({ messageId, conversationId }) => {
+      console.log(
+        "get delive in red",
+        messageId,
+        "messgeId",
+        conversationId,
+        "mainId",
+      );
+      setUsers((prev) =>
+        prev.map((chat) =>
+          chat.lastMessageId === messageId ? { ...chat, status: "Read" } : chat,
+        ),
+      );
+    });
+    socket.on("status:delivered", ({ messageId, conversationId }) => {
+      console.log(
+        "get delive in sidebar",
+        messageId,
+        "messgeId",
+        conversationId,
+        "mainId",
+      );
+      setUsers((prev) =>
+        prev.map((chat) =>
+          chat.lastMessageId === messageId
+            ? { ...chat, status: "Delivered" }
+            : chat,
+        ),
+      );
+    });
 
     socket.on("groupCreate", ({ id, name, image, members }) => {
       setUsers((prev) => [
@@ -316,6 +351,7 @@ const Sidebar = ({
         lastMessageId,
         lastMessageCreatedAt,
         deleteType,
+        status,
       }) => {
         console.log("mainId", sidebarChatId, "last message,", lastMessage);
         console.log(
@@ -328,6 +364,7 @@ const Sidebar = ({
           lastMessageId,
           lastMessageCreatedAt,
           deleteType,
+          status,
         );
         if (deleteType === "For_Everypone") {
           const users = usersRef.current;
@@ -359,6 +396,7 @@ const Sidebar = ({
                           : "Start conversation",
                   lastMessageCreatedAt: new Date(),
                   lastMessageId: lastMessageId,
+                  status: status,
                 }
               : chatList,
           ),
@@ -463,8 +501,7 @@ const Sidebar = ({
     setSelectedUser(userCoversation);
     setShowUserChat(true);
   };
-  // console.log(sortedUsers);
-  console.log(typingInfo, "typing info", typingUserId, "typing userid");
+  console.log(sortedUsers);
   return (
     <div className="w-full bg-[#574CD6] text-white flex flex-col h-screen border-r border-white/10 shadow-2xl relative overflow-hidden">
       {/* create group section */}
@@ -742,18 +779,6 @@ const Sidebar = ({
                   }}
                   className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-0"
                 >
-                  {/* <div className="relative w-8 h-8  bg-gray-200 flex items-center justify-center overflow-hidden"> */}
-                  {/* {user.image ? (
-                      <img
-                        src={user.image}
-                        className="w-full h-full object-cover"
-                        alt=""
-                      />
-                    ) : (
-                      <span className="text-[#574CD6] text-[10px] font-bold">
-                        {getdefaultProfile(user.name)}
-                      </span>
-                    )} */}
                   <Profile
                     getdefaultProfile={getdefaultProfile}
                     selectedUser={user}
@@ -823,7 +848,7 @@ const Sidebar = ({
                 {userCoversation?.name}
               </p>
               <div className="flex gap-3 justify-between items-center text-xs xl:text-sm 3xl:text-lg 2xl:mt-2 3xl:mt-3">
-                <p
+                <div
                   className={`truncate ${
                     selectedUser?.id === userCoversation?.id
                       ? "text-[#574CD6]/80"
@@ -832,10 +857,19 @@ const Sidebar = ({
                 >
                   {typingUserId[`chat_${userCoversation?.id}`] &&
                   userCoversation?.type === "chat" &&
-                  typingInfo[`chat_${userCoversation?.id}`]?.type === "chat"
-                    ? "Typing..."
-                    : userCoversation?.lastMessage}
-                </p>
+                  typingInfo[`chat_${userCoversation?.id}`]?.type === "chat" ? (
+                    "Typing..."
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      {userCoversation?.messageSenderId === logedInUser?.id && (
+                        <span>
+                          <MessageStatus status={userCoversation?.status} />
+                        </span>
+                      )}
+                      <p className="truncate">{userCoversation?.lastMessage}</p>
+                    </div>
+                  )}
+                </div>
                 {userCoversation?.lastMessageCreatedAt && (
                   <p className="opacity-70 ml-2 shrink-0 text-xs 2xl:text-sm 3xl:text-lg">
                     {getDate(userCoversation?.lastMessageCreatedAt)}
