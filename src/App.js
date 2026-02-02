@@ -1,14 +1,9 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import SignupPage from "./pages/Signup";
 import ChatPage from "./pages/ChatPage";
 import { ToastContainer } from "react-toastify";
-import LoginPage from "./pages/LogInPage";
 import PrivateRoute from "./routes/PrivateRoute";
 import PublicRoute from "./routes/PublicRoute";
-import VerifyEmailPage from "./pages/VerifyEmailPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuthForm from "./pages/AuthForm";
 const App = () => {
   return (

@@ -1,10 +1,6 @@
-import {
-  IoTimeOutline,
-  IoCheckmark,
-  IoCheckmarkDone,
-} from "react-icons/io5";
+import { IoTimeOutline, IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 
-const MessageStatus = ({ status }) => {
+export const MessageStatus = ({ status }) => {
   switch (status) {
     case "Pending":
       return <IoTimeOutline />;
@@ -19,4 +15,10 @@ const MessageStatus = ({ status }) => {
   }
 };
 
-export default MessageStatus;
+export const getGroupMemberName = ({ msg, groupMembers }) => {
+  // console.log("groupMembers", groupMembers, "messages", msg);
+  const name = groupMembers?.find(
+    (m) => Number(m?.user?.id) === Number(msg?.userId),
+  );
+  return name?.user?.name;
+};

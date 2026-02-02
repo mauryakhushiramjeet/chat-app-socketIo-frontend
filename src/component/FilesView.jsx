@@ -54,7 +54,7 @@ const FilesView = ({ msg }) => {
     setPreviewFile(file);
   };
   return (
-    <div className="flex flex-wrap gap-2 ">
+    <div className="flex flex-wrap">
       {viewImage !== null && (
         <div
           className="inset-0 bg-black/90 fixed z-[88] p-3 xs:p-[50px] flex flex-col gap-5 items-center justify-center"
@@ -259,7 +259,7 @@ const FilesView = ({ msg }) => {
               </p>
             </div>
             {file?.fileType?.startsWith("image/") && (
-              <div className="h-full w-full cursor-pointer border border-gray-300/50 rounded-lg  bg-[#786FDD] overflow-hidden max-h-[120px] lg:max-h-[200px] ">
+              <div className="h-full w-full cursor-pointer border border-gray-300/50 rounded-2xl  bg-[#786FDD] overflow-hidden max-h-[120px] lg:max-h-[200px] ">
                 <img
                   src={file?.filePath}
                   alt="user"
@@ -275,7 +275,7 @@ const FilesView = ({ msg }) => {
               </div>
             )}
             {file?.fileType?.startsWith("video/") && (
-              <div className="max-h-[120px] lg:max-h-[200px] overflow-hidden w-full  border border-gray-300/50 rounded-lg overflow- relative ">
+              <div className="max-h-[120px] lg:max-h-[200px] overflow-hidden w-full  border border-gray-300/50 rounded-2xl overflow- relative ">
                 <video
                   ref={(el) => (videoRefs.current[file?.id] = el)}
                   src={file?.filePath}

@@ -13,6 +13,7 @@ import { getdefaultProfile } from "../helper/filePre";
 import { getDate } from "../helper/getDate";
 import ImojiPiker from "./ImojiPiker";
 import { loginUser } from "../store/actions/userActions";
+import { getGroupMemberName } from "../helper/chatPageHelper";
 
 const InputBox = ({
   typingUserId,
@@ -39,7 +40,6 @@ const InputBox = ({
   const fileRef = useRef(null);
   const fileErrorRef = useRef(null);
   const fileBottomRef = useRef(null);
-  
   useEffect(() => {
     const handleImoziPickerClick = (e) => {
       if (
@@ -65,7 +65,7 @@ const InputBox = ({
   }, [message]);
   useEffect(() => {
     if (selectedFiles.length === 0 || !fileBottomRef.current) return;
-   
+
     fileBottomRef.current.scrollTop = fileBottomRef.current.scrollHeight;
   }, [selectedFiles]);
   const handleImages = (e) => {
@@ -167,7 +167,14 @@ const InputBox = ({
               <div className="w-full flex justify-between">
                 {" "}
                 <div className="flex gap-2">
-                  <p>{selectedUser?.name}</p>{" "}
+                  <p>
+                    {selectedUser?.type === "group"
+                      ? getGroupMemberName({
+                          msg: replyTomessage,
+                          groupMembers,
+                        })
+                      : selectedUser?.name}
+                  </p>{" "}
                   <p className="text-gray-300">
                     {getDate(replyTomessage?.createdAt)}
                   </p>

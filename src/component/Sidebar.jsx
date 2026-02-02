@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GoSearch } from "react-icons/go";
 import {
-  getConversationsUsers,
   updateProfileThunk,
 } from "../store/actions/userActions";
 import {
@@ -12,15 +11,14 @@ import {
   FaPencilAlt,
   FaUsers,
 } from "react-icons/fa"; // Added FaUsers
-import { MdGroupAdd } from "react-icons/md"; // Added MdGroupAdd
-import { RxCross2 } from "react-icons/rx";
+import { MdGroupAdd } from "react-icons/md";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { createGroup } from "../store/actions/groupAction";
 import { getSidebarChatList } from "../store/actions/sidebarChatListActions";
 import Profile from "./Profile";
 import { ProfileContext } from "../utills/context/ProfileContext";
-import MessageStatus from "../helper/chatPageHelper";
+import {MessageStatus} from "../helper/chatPageHelper";
 
 const Sidebar = ({
   logedInUser,
@@ -202,7 +200,7 @@ const Sidebar = ({
           status: item?.type === "group" ? "Send" : item.status,
           lastMessageId: item.lastMessageId,
           messageSenderId:
-            item.type === "group" ? logedInUser.id : item?.messageSenderId,
+            item.type === "group" ? logedInUser?.id : item?.messageSenderId,
           LastActiveAt:
             item.type === "group" ? null : item.chatUser?.LastActiveAt,
           lastMessageCreatedAt: item.lastMessageCreatedAt || null,
@@ -501,7 +499,6 @@ const Sidebar = ({
     setSelectedUser(userCoversation);
     setShowUserChat(true);
   };
-  console.log(sortedUsers);
   return (
     <div className="w-full bg-[#574CD6] text-white flex flex-col h-screen border-r border-white/10 shadow-2xl relative overflow-hidden">
       {/* create group section */}

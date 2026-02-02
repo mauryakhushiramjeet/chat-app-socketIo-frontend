@@ -24,7 +24,6 @@ import { HiArrowUturnLeft } from "react-icons/hi2";
 import { FaArrowLeft } from "react-icons/fa";
 import DeleteModel from "../component/DeleteModel";
 import InputBox from "../component/InputBox";
-import { IoCheckmark, IoCheckmarkDone, IoTimeOutline } from "react-icons/io5";
 import EditMessageArea from "../component/EditMessageArea ";
 import FilesView from "../component/FilesView";
 import Profile from "../component/Profile";
@@ -34,7 +33,7 @@ import ChatMessageShimmer from "../component/ChatMessageShimmer ";
 import { getDateSeperator } from "../helper/getDateSeparator";
 import ChatOptions from "../component/ChatOptions";
 import GroupMessageSeen from "../component/GroupMessageSeen ";
-import MessageStatus from "../helper/chatPageHelper";
+import { getGroupMemberName, MessageStatus } from "../helper/chatPageHelper";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -68,7 +67,6 @@ const ChatPage = () => {
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
   const messageReplyRef = useRef([]);
-  const deleteMessageIdRef = React.useRef(null);
   const isFetchingOldRef = useRef(false);
   const TypingTimeOut = useRef(null);
 
@@ -147,14 +145,14 @@ const ChatPage = () => {
       if (receiverId !== logedInUser?.id) return;
 
       if (type === "group") {
-        console.log(
-          "geted group typing signal",
-          senderId,
-          "reciver",
-          receiverId,
-          type,
-          groupId,
-        );
+        // console.log(
+        //   "geted group typing signal",
+        //   senderId,
+        //   "reciver",
+        //   receiverId,
+        //   type,
+        //   groupId,
+        // );
         setTypingUserId((prev) => ({ ...prev, [`group_${senderId}`]: true }));
         const data = {
           receiverId,
@@ -162,7 +160,7 @@ const ChatPage = () => {
           senderId,
           type,
         };
-        console.log(senderId, receiverId, type, groupId, "in group signal");
+        // console.log(senderId, receiverId, type, groupId, "in group signal");
 
         setTypingInfo((prev) => {
           const groupKey = `group_${groupId}`;
@@ -194,7 +192,7 @@ const ChatPage = () => {
     newSocket.on(
       "userStopTyping",
       ({ senderId, receiverId, type, groupId }) => {
-        console.log("get stop signal", senderId, receiverId, type, groupId);
+        // console.log("get stop signal", senderId, receiverId, type, groupId);
         if (receiverId === logedInUser?.id) {
           if (type === "group") {
             setTypingUserId((prev) => ({
@@ -277,7 +275,7 @@ const ChatPage = () => {
         //   replyMessage,
         // );
         const currentSelectedUser = selectedUserRef.current;
-        console.log("current selected user", currentSelectedUser);
+        // console.log("current selected user", currentSelectedUser);
         setPrivateMessages((prev) => {
           const updated = prev?.map((msg) =>
             msg?.clientMessageId === clientMessageId
@@ -306,20 +304,20 @@ const ChatPage = () => {
         });
         const currentOnlineUser = onlineUserRef.current;
         const selectedUser = selectedUserRef.current;
-        console.log("ref selected user", selectedUser, selectedUser.mainId);
+        // console.log("ref selected user", selectedUser, selectedUser.mainId);
         const recieverSocketId = currentOnlineUser.includes(
           String(logedInUser?.id),
         );
 
         if (response?.receiverId === logedInUser?.id && recieverSocketId) {
           if (currentSelectedUser?.id === response?.senderId) {
-            console.log("rged ", selectedUser.mainId);
+            // console.log("rged ", selectedUser.mainId);
             newSocket.emit("status:Read", {
               messageId: response?.id,
               conversationId: selectedUser?.mainId,
             });
           } else {
-            console.log("deliver ", selectedUser.mainId);
+            // console.log("deliver ", selectedUser.mainId);
 
             newSocket.emit("status:delivered", {
               messageId: response?.id,
@@ -347,14 +345,14 @@ const ChatPage = () => {
     newSocket.on(
       "message:deleted",
       ({ messageId, type, chatType, lastMessageCreatedAt }) => {
-        console.log(
-          "get delete signal",
-          messageId,
-          "current deleted",
-          type,
-          chatType,
-          lastMessageCreatedAt,
-        );
+        // console.log(
+        //   "get delete signal",
+        //   messageId,
+        //   "current deleted",
+        //   type,
+        //   chatType,
+        //   lastMessageCreatedAt,
+        // );
         const curtrentSelectedUser = selectedUserRef.current;
         const currentDeletedMessageId = messageId;
         const currentMessages = messagesRef.current;
@@ -413,7 +411,6 @@ const ChatPage = () => {
             );
           }
         }
-        console.log("reac here");
         if (isLastMessageDeleted(currentDeletedMessageId, currentMessages)) {
           newSocket.emit("sidebar:update", {
             chatType: curtrentSelectedUser?.type,
@@ -422,7 +419,6 @@ const ChatPage = () => {
             messageId: currentDeletedMessageId,
             chatListId: curtrentSelectedUser?.mainId,
           });
-          console.log("sendSidebar signal");
         }
         setIsModelOpen(false);
       },
@@ -566,9 +562,7 @@ const ChatPage = () => {
       groupId:
         selectedUser?.type === "group" ? selectedUser?.id.split("-")[1] : null,
     });
-    console.log("send signal typing ");
     if (TypingTimeOut.current) {
-      console.log("clear time out");
       clearTimeout(TypingTimeOut.current);
     }
     // setTimeout(() => {
@@ -593,7 +587,6 @@ const ChatPage = () => {
             ? Number(selectedUser?.id?.split("-")[1])
             : null,
       });
-      console.log("send stop signal");
     }, 3000);
   };
 
@@ -755,7 +748,10 @@ const ChatPage = () => {
       mylastMessageId?.lastSeenMessageId
     )
       return;
-    const groupId = Number(selectedUser?.id?.split("-")[1]);
+    const groupId =
+      selectedUser.type === "group"
+        ? Number(selectedUser?.id?.split("-")[1])
+        : null;
     const lastMessageId = groupMessages[groupMessages.length - 1]?.id;
     dispatch(
       updateMembersLastMsgSeenId({
@@ -786,10 +782,8 @@ const ChatPage = () => {
 
     return `${hours12}:${minutes} ${period}`;
   };
-  console.log(isChatLoading, "is chatLo");
   useEffect(() => {
     if (!messageStore) return;
-    console.log(messageStore);
 
     if (messageStore?.messages?.length === 0) return;
     setIsChatLoading(messageStore?.isLoading);
@@ -867,17 +861,16 @@ const ChatPage = () => {
     if (!messages?.length) return;
 
     const el = chatTopRef.current;
-    // console.log(el.scrollTop, "top se scroll");
     const atTop = el.scrollTop <= 20;
     if (!atTop) return;
-    console.log(
-      chatTopRef.current && chatTopRef.current?.scrollTop,
-      "scroll top se",
-      chatTopRef.current?.scrollHeight,
-      "scrollheight",
-      chatTopRef.current?.clientHeight,
-      "client visible height",
-    );
+    // console.log(
+    //   chatTopRef.current && chatTopRef.current?.scrollTop,
+    //   "scroll top se",
+    //   chatTopRef.current?.scrollHeight,
+    //   "scrollheight",
+    //   chatTopRef.current?.clientHeight,
+    //   "client visible height",
+    // );
     const firstMessageId = messages[0]?.id;
     if (!firstMessageId) return;
     isFetchingOldRef.current = true;
@@ -893,9 +886,6 @@ const ChatPage = () => {
       setTimeout(() => {
         requestAnimationFrame(() => {
           if (messageEndRef.current && chatTopRef.current) {
-            console.log(firstLoadRef.current, "is firt load");
-            console.log("scroll auto happedn ");
-
             messageEndRef.current.scrollIntoView({ behavior: "auto" });
           }
         }, 0);
@@ -909,13 +899,7 @@ const ChatPage = () => {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
-  console.log(onlineUsers);
 
-  // useEffect(() => {
-  //   // const el = chatTopRef.current;
-  //   if (!messageEndRef.current) return;
-  //   messageEndRef.current.scrollIntoView({ behavior: "auto" });
-  // }, []);
   const handleDeleteForMe = () => {
     const deletedMessageId = isModelOpen;
 
@@ -932,7 +916,6 @@ const ChatPage = () => {
   };
 
   const isLastMessageDeleted = (messageId, currentMessages) => {
-    console.log(messageId, "last deletemessages", currentMessages);
     const selectedUser = selectedUserRef?.current;
     if (!messageId || !currentMessages || currentMessages.length === 0)
       return false;
@@ -949,7 +932,6 @@ const ChatPage = () => {
     if (!deleteMessage || !lastMessage) {
       return false;
     }
-    console.log(deleteMessage.id === lastMessage.id, "oshksk");
     return deleteMessage.id === lastMessage.id;
   };
 
@@ -1010,10 +992,13 @@ const ChatPage = () => {
         return selectedUser?.name;
       }
     } else {
-      const memebername = groupMembers?.find((g) => g?.id === replySenderId);
-      return memebername?.name;
+      const memebername = groupMembers?.find(
+        (g) => g?.user?.id === replySenderId,
+      );
+      return memebername?.user?.name;
     }
   };
+
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito relative">
       {/* Sidebar - Added a subtle border-right */}
@@ -1266,7 +1251,7 @@ const ChatPage = () => {
                             />
                           ) : (
                             <div
-                              className={`px-2 sm:px-3 2xl:px-4 relative group py-1 sm:py-2 shadow-sm text-sm leading-relaxed max-w-[240px] xs:max-w-[300px] sm:max-w-[350px] lg:max-w-[500px] xl:max-w-[550px] 2xl:max-w-[700px]  flex w-fit  flex-col break-words ${
+                              className={`p-1 xs:p-2 sm:p-3 2xl:p-4 relative group shadow-sm text-sm leading-relaxed max-w-[240px] xs:max-w-[300px] sm:max-w-[350px] lg:max-w-[500px] xl:max-w-[550px] 2xl:max-w-[700px]  flex w-fit  flex-col break-words ${
                                 isMe
                                   ? `${
                                       msg.text === null
@@ -1277,6 +1262,12 @@ const ChatPage = () => {
                               }`}
                             >
                               <div>
+                                <div
+                                  className={`${isMe ? "hidden" : "block"} ${selectedUser?.type === "group" ? "block" : "hidden"} absolute top-[-20px] 2xl:top-[-25px] left-0 text-nowrap font-semibold text-xs md:text-sm 2xl:text-base text-indigo-600/80`}
+                                >
+                                  {getGroupMemberName({ msg, groupMembers })}
+                                  {/* {getGroupMemberName(msg)} */}
+                                </div>
                                 <div
                                   className={`absolute ${
                                     msg.text === null ||
@@ -1436,7 +1427,7 @@ const ChatPage = () => {
                 );
               })}
               <GroupMessageSeen
-                lastMessageId={messages[messages.length - 1]?.id}
+                lastMessageId={messages[messages?.length - 1]?.id}
                 members={
                   seenMembers && seenMembers.length !== 0
                     ? seenMembers
