@@ -81,7 +81,7 @@ const ChatPage = () => {
   const firstLoadRef = useRef(true);
   useEffect(() => {
     if (!logedInUser) return;
-    const newSocket = io("http://localhost:8085");
+    const newSocket = io(process.env.REACT_APP_BACKEND_URL);
     setSocket(newSocket);
     newSocket.emit("online-users", logedInUser?.id);
     newSocket.on("online-users", (onlineUsers) => {

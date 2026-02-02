@@ -101,7 +101,7 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
   const handleResend = () => {
     if (currentForm === "login") {
       // for email verify resend mail
-      dispatch(resendEmailVerification(email))
+      dispatch(resendEmailVerification({ email }))
         .unwrap()
         .then((res) => {
           if (res.success) {
@@ -118,6 +118,7 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
         });
     }
     if (currentForm === "forget-password") {
+      setLoading(true);
       console.log("jkhdsjha,email", email);
       dispatch(resendMailForgetPassword(email))
         .unwrap()
@@ -129,10 +130,12 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
             setOtp(new Array(6).fill(""));
           } else {
             toast.error(res.message);
+            setLoading(false);
           }
         })
         .catch((error) => {
           console.log(error);
+          setLoading(false);
         });
     }
   };

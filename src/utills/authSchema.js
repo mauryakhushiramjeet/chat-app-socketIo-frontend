@@ -23,11 +23,11 @@ export const loginSchema = yup.object().shape({
   password: yup
     .string()
     .required("Password is required")
-    .min(8, "Password must be at least 8 characters")
-    // .matches(
-    //   /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&#])/,
-    //   "Password must contain uppercase, lowercase, number and special character",
-    // ),
+    .min(8, "Password must be at least 8 characters"),
+  // .matches(
+  //   /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&#])/,
+  //   "Password must contain uppercase, lowercase, number and special character",
+  // ),
 });
 export const signupSchema = yup.object({
   name: yup.string().required("Name is required"),
@@ -52,4 +52,7 @@ export const forgetPassword_OtpSchema = yup.object().shape({
     .string()
     .length(6, "OTP must be 6 digits")
     .required("OTP is required"),
+});
+export const email_verify_Schema = yup.object().shape({
+  email: yup.string().email("Invalid email").required("Email is required"),
 });
