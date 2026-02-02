@@ -140,19 +140,10 @@ const ChatPage = () => {
       setEditMessageId(null);
     });
     newSocket.on("userTyping", ({ senderId, receiverId, type, groupId }) => {
-      const currentSelectedUser = selectedUserRef?.current;
-      // if (!currentSelectedUser) return;
       if (receiverId !== logedInUser?.id) return;
 
       if (type === "group") {
-        // console.log(
-        //   "geted group typing signal",
-        //   senderId,
-        //   "reciver",
-        //   receiverId,
-        //   type,
-        //   groupId,
-        // );
+      
         setTypingUserId((prev) => ({ ...prev, [`group_${senderId}`]: true }));
         const data = {
           receiverId,

@@ -12,7 +12,7 @@ const ChatOptions = ({
   messages,
 }) => {
   const optionsRef = useRef(null);
-  const { showProfile, setShowProfile } = useContext(ProfileContext);
+  const { setShowProfile } = useContext(ProfileContext);
 
   useEffect(() => {
     const toggleOption = (e) => {
@@ -22,7 +22,7 @@ const ChatOptions = ({
     };
     window.addEventListener("mousedown", toggleOption);
     return () => window.removeEventListener("mousedown", toggleOption);
-  }, [open]);
+  }, []);
   const handleClearChat = () => {
     // if()
     if (messages?.length === 0) {
