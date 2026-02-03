@@ -6,6 +6,7 @@ import {
   resendMailForgetPassword,
   verifyOtp,
 } from "../store/actions/verifyOtpActions";
+import SubmitButton from "../component/SubmitButton";
 
 const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
   const [otp, setOtp] = useState(new Array(6).fill(""));
@@ -81,6 +82,10 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
 
             setIsOtpSend(false);
           }
+          if (currentForm === "login") {
+            setIsOtpSend(false);
+          }
+
           if (currentForm === "forget-password") {
             setCurrentForm("reset-password");
             setIsOtpSend(false);
@@ -98,8 +103,8 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
   };
 
   const handleResend = () => {
+    setLoading(true);
     if (currentForm === "login") {
-      // for email verify resend mail
       dispatch(resendEmailVerification({ email }))
         .unwrap()
         .then((res) => {
@@ -117,7 +122,6 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
         });
     }
     if (currentForm === "forget-password") {
-      setLoading(true);
       console.log("jkhdsjha,email", email);
       dispatch(resendMailForgetPassword(email))
         .unwrap()
@@ -134,6 +138,9 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
         })
         .catch((error) => {
           console.log(error);
+          setLoading(false);
+        })
+        .finally(() => {
           setLoading(false);
         });
     }
@@ -208,7 +215,14 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
             </p>
           )}
 
-          <button
+          <SubmitButton
+            type="submit"
+            loading={loading}
+            buttonName="Verify Code"
+            isUnverified={false}
+            disabled={loading || timer === 0}
+          />
+          {/* <button
             type="submit"
             disabled={loading || timer === 0}
             className={`w-full py-3 rounded-xl transition-all font-semibold shadow-lg ${
@@ -218,7 +232,7 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
             }`}
           >
             {loading ? "Verifying..." : "Verify Code"}
-          </button>
+          </button> */}
         </form>
 
         <div className="mt-8">

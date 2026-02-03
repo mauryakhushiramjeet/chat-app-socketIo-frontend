@@ -6,6 +6,7 @@ import { useFormik } from "formik";
 import { loginUser } from "../store/actions/userActions";
 import { email_verify_Schema, loginSchema } from "../utills/authSchema";
 import { resendEmailVerification } from "../store/actions/verifyOtpActions";
+import SubmitButton from "../component/SubmitButton";
 
 const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
   const [loading, setLoading] = useState(false);
@@ -42,6 +43,10 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
                 if (res.success) {
                   toast.success(res.message);
                   setIsOtpSend(true);
+                  localStorage.setItem(
+                    "userData",
+                    JSON.stringify({ email: values.email }),
+                  );
                 } else {
                   toast.error(res.message);
                 }
@@ -82,39 +87,47 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
             <p className="text-center text-gray-500 text-sm mb-4">
               Enter your email to receive a new verification link.
             </p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={values.email}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  placeholder="petermiller@gmail.com"
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all ${
-                    touched.email && errors.email
-                      ? "border-red-500"
-                      : "border-gray-200"
-                  }`}
-                />
-              </div>
-              <button
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={values.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="petermiller@gmail.com"
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all ${
+                      touched.email && errors.email
+                        ? "border-red-500"
+                        : "border-gray-200"
+                    }`}
+                  />
+                </div>
+                {/* <button
                 onClick={handleSubmit}
                 disabled={loading}
                 className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all"
               >
                 {loading ? "Sending..." : "Send Verification Link"}
-              </button>
-              <button
-                onClick={() => setShowEmailVerifyFeild(false)}
-                className="w-full text-indigo-600 text-sm font-semibold hover:underline"
-              >
-                Back to Login
-              </button>
-            </div>
+              </button> */}
+                <SubmitButton
+                  type="submit"
+                  loading={loading}
+                  buttonName={"Send Verification Link"}
+                  disabled={loading}
+                />
+                <button
+                  onClick={() => setShowEmailVerifyFeild(false)}
+                  className="w-full text-indigo-600 text-sm font-semibold hover:underline"
+                >
+                  Back to Login
+                </button>
+              </div>
+            </form>
           </div>
         ) : (
           <>
@@ -168,17 +181,13 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
               </div>
 
               <div className="pt-2 space-y-3">
-                <button
+                <SubmitButton
                   type="submit"
+                  loading={loading}
+                  buttonName={"Login"}
                   disabled={loading}
-                  className={`w-full py-3 rounded-xl font-bold text-lg transition-colors ${
-                    isUnverified
-                      ? "bg-[#D1D5DB] text-white cursor-not-allowed"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700"
-                  }`}
-                >
-                  {loading ? "Login..." : "Login"}
-                </button>
+                  className={false}
+                />
 
                 {isUnverified && (
                   <button
@@ -202,12 +211,13 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
                   Signup
                 </span>
               </p>
-              <p
+              <button
+                type="button"
                 onClick={() => setCurrentForm("forget-password")}
                 className="text-sm text-indigo-500 font-semibold mt-2 cursor-pointer hover:underline"
               >
                 Forgot Password?
-              </p>
+              </button>
             </div>
           </>
         )}

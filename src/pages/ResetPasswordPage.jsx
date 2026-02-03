@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { useFormik } from "formik";
 import { resetPassword } from "../store/actions/userActions";
 import { resetPasswordSchema } from "../utills/authSchema";
+import SubmitButton from "../component/SubmitButton";
 const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
   const [email, setEmail] = useState("");
 
@@ -113,13 +114,20 @@ const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
             )}
           </div>
 
-          <button
+          {/* <button
             type="submit"
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition-all font-semibold shadow-lg shadow-indigo-200 mt-2"
           >
             {loading ? "Updating..." : "Reset Password"}
-          </button>
+          </button> */}
+           <SubmitButton
+            type="submit"
+            loading={loading}
+            buttonName="Reset Password"
+            isUnverified={false}
+            disabled={loading}
+          />
         </form>
       </div>
     </div>

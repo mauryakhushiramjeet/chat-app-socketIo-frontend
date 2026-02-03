@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GoSearch } from "react-icons/go";
-import {
-  updateProfileThunk,
-} from "../store/actions/userActions";
+import { updateProfileThunk } from "../store/actions/userActions";
 import {
   FaCheck,
   FaCamera,
@@ -18,7 +16,9 @@ import { createGroup } from "../store/actions/groupAction";
 import { getSidebarChatList } from "../store/actions/sidebarChatListActions";
 import Profile from "./Profile";
 import { ProfileContext } from "../utills/context/ProfileContext";
-import {MessageStatus} from "../helper/chatPageHelper";
+import { MessageStatus } from "../helper/chatPageHelper";
+import { CgSpinner } from "react-icons/cg";
+import SubmitButton from "./SubmitButton";
 
 const Sidebar = ({
   logedInUser,
@@ -43,6 +43,7 @@ const Sidebar = ({
   const groupFileInputRef = useRef(null);
   const usersRef = useRef([]);
   const { showProfile, setShowProfile } = useContext(ProfileContext);
+  const [loading, setLoading] = useState(false);
   const [initialProfile, setInitialProfile] = useState({
     name: logedInUser?.name,
     about: "Available",
@@ -117,6 +118,7 @@ const Sidebar = ({
     });
     formData.append("image", groupImage?.file);
     formData.append("groupCreatedUserId", logedInUser?.id);
+    setLoading(true);
 
     dispatch(createGroup(formData))
       .unwrap()
@@ -124,12 +126,15 @@ const Sidebar = ({
         // console.log(res);
         if (res.success) {
           toast.success(res.message);
+          setLoading(false);
         } else {
           toast.error(res.message);
+          setLoading(false);
         }
       })
       .catch((error) => {
         console.log(error);
+        setLoading(false);
       });
   };
   useEffect(() => {
@@ -209,7 +214,7 @@ const Sidebar = ({
 
       setUsers(normalizedUsers);
     }
-  }, [sidebarChatListStore,logedInUser?.id]);
+  }, [sidebarChatListStore, logedInUser?.id]);
   useEffect(() => {
     usersRef.current = users;
   }, [users]);
@@ -414,6 +419,8 @@ const Sidebar = ({
 
   const upadteProfileImage = async () => {
     try {
+      setLoading(true);
+
       const formData = new FormData();
       formData.append("name", profile?.name);
       formData.append("userId", logedInUser?.id);
@@ -425,9 +432,12 @@ const Sidebar = ({
           if (res.success) {
             toast.success(res.message);
             localStorage.setItem("userData", JSON.stringify(res?.user));
+            setLoading(false);
+
             navigate("/chat");
           } else {
             toast.error(res.message);
+            setLoading(false);
           }
         });
     } catch (err) {
@@ -490,7 +500,12 @@ const Sidebar = ({
     };
   }, [socket, logedInUser]);
   const handleLogout = () => {
+    console.log("button clicked");
+    setLoading(true);
+
     localStorage.removeItem("userData");
+    setLoading(false);
+
     navigate("/");
   };
   // console.log(onlineUsers, "online users");
@@ -600,12 +615,23 @@ const Sidebar = ({
             ))}
           </div>
 
-          <button
+          {/* <button
             onClick={handleCreateGroup}
             className="mt-4 w-full bg-white text-[#574CD6] py-2 3xl:py-3 rounded-xl font-medium 3xl:font-bold shadow-lg active:scale-95 transition-all text-sm 2xl:text-base 3xl:text-lg"
           >
             Create Group ({selectedMembers.length})
-          </button>
+          </button> */}
+          <SubmitButton
+            type="button"
+            onClick={() => handleCreateGroup()}
+            loading={loading}
+            buttonName={`Create Group ${selectedMembers?.length}`}
+            disabled={loading}
+            className={
+              "mt-4 w-full bg-white text-[#574CD6] py-2 3xl:py-3 rounded-xl font-medium 3xl:font-bold shadow-lg active:scale-95 transition-all text-sm 2xl:text-base 3xl:text-lg flex justify-center"
+            }
+            iconColor={"text-[#574CD6]"}
+          />
         </div>
       </div>
 
@@ -668,7 +694,7 @@ const Sidebar = ({
             <div className="flex justify-between items-center mt-2 border-b border-white/20 pb-2">
               <input
                 type="text"
-                className="text-sm 2xl:text-lg outline-none bg-transparent font-medium"
+                className="text-sm 2xl:text-lg outline-none bg-transparent font-medium w-full"
                 value={profile?.name}
                 onChange={(e) =>
                   setProfile((prev) => ({
@@ -688,7 +714,7 @@ const Sidebar = ({
             <div className="flex justify-between items-center mt-2 border-b border-white/20 pb-2">
               <input
                 type="text"
-                className="text-sm 2xl:text-lg outline-none font-medium bg-transparent"
+                className="text-sm 2xl:text-lg outline-none font-medium bg-transparent w-full"
                 value={profile?.about}
                 onChange={(e) =>
                   setProfile((prev) => ({
@@ -701,23 +727,41 @@ const Sidebar = ({
             </div>
           </div>
           <div className="mt-10 w-full px-2 text-sm 3xl:text-lg flex flex-col items-center">
-            <button
+            {/* <button
               onClick={() => upadteProfileImage()}
               disabled={!isChanged}
               className={`w-[200px]  md:w-full px-8 md:px-0 ${
                 isChanged ? "bg-gray-100 hover:bg-gray-100" : "bg-gray-100/50"
               }  text-[#574CD6] py-2 md:py-[6px] rounded-xl font-medium 2xl:font-bold  shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
             >
-              Save Changes
-            </button>
-            <button
+              {loading ? (
+                <span className="animate-spin text-white font-bold">
+                  <CgSpinner />
+                </span>
+              ) : (
+                " Save Changes"
+              )}
+            </button> */}
+            <SubmitButton
+              type="button"
+              onClick={() => upadteProfileImage()}
+              loading={loading}
+              buttonName={"Save Changes"}
+              disabled={loading}
+              className={`w-[200px]  md:w-full px-8 md:px-0 ${
+                isChanged ? "bg-gray-100 hover:bg-gray-100" : "bg-gray-100/50"
+              }  text-[#574CD6] py-2 md:py-[6px] rounded-xl font-medium 2xl:font-bold  shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
+            />
+            <SubmitButton
+              type="button"
               onClick={() => handleLogout()}
+              loading={loading}
+              buttonName={" Log Out"}
+              disabled={loading}
               className={`w-[200px]  md:w-full px-8 md:px-0 
                  bg-red-500/90 hover:bg-red-700  mt-3
               text-white py-2 md:py-[6px] rounded-xl font-medium 2xl:font-bold shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
-            >
-              Log Out
-            </button>
+            />
           </div>
         </div>
       </div>

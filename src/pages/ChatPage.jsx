@@ -759,7 +759,6 @@ const ChatPage = () => {
     groupMessages,
     logedInUser?.id,
     selectedUser?.id,
-    selectedUser.type,
     socket,
     groupMembers,
     dispatch,

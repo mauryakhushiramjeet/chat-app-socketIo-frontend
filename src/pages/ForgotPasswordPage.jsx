@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { forgetPassword_EmailVerify } from "../store/actions/verifyOtpActions";
 import { forgetPassword_EmailSchema } from "../utills/authSchema";
 import { useFormik } from "formik";
+import SubmitButton from "../component/SubmitButton";
 // import { forgotPassword } from "../store/actions/authActions"; // Adjust path as needed
 
 const ForgotPasswordPage = ({ setIsOtpSend, setCurrentForm }) => {
@@ -31,21 +32,13 @@ const ForgotPasswordPage = ({ setIsOtpSend, setCurrentForm }) => {
               localStorage.setItem("userData", JSON.stringify(userData));
               setLoading(false);
               setIsOtpSend(true);
-            } else {
-              toast.error(res.message);
             }
           })
           .catch((error) => {
             console.log(error);
             toast.error(error);
+            setLoading(false);
           });
-        try {
-        } catch (err) {
-          console.log(err);
-          // toast.error(err);
-        } finally {
-          setLoading(false);
-        }
       },
     });
   return (
@@ -95,13 +88,20 @@ const ForgotPasswordPage = ({ setIsOtpSend, setCurrentForm }) => {
             )}
           </div>
 
-          <button
+          {/* <button
             type="submit"
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition-all font-semibold shadow-lg shadow-indigo-200"
           >
             {loading ? "Sending..." : "Send Reset Link"}
-          </button>
+          </button> */}
+          <SubmitButton
+            type="submit"
+            loading={loading}
+            buttonName="Send Reset Link"
+            isUnverified={false}
+            disabled={loading}
+          />
         </form>
 
         <div className="mt-8 text-center">

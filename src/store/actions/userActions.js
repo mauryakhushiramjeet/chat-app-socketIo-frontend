@@ -24,6 +24,7 @@ export const signupUser = createAsyncThunk(
       const response = await axiosInstance.post("/signup", formData);
       return response.data;
     } catch (error) {
+      console.log(error, "error in signp");
       return rejectWithValue(error.response?.data || "Signup failed");
     }
   },

@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { signupUser } from "../store/actions/userActions.js";
 import { useFormik } from "formik";
 import { signupSchema } from "../utills/authSchema.js";
+import SubmitButton from "../component/SubmitButton.jsx";
 const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -23,27 +24,25 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
       onSubmit: async (values) => {
         setLoading(true);
 
-        try {
-          const formData = new FormData();
-          formData.append("name", values.name);
-          formData.append("email", values.email);
-          formData.append("password", values.password);
-          formData.append("image", image);
-          dispatch(signupUser(formData))
-            .unwrap()
-            .then((res) => {
-              console.log(res);
-              if (res.success) {
-                toast.success(res.message);
-                localStorage.setItem("userData", JSON.stringify(res.data));
-                setIsOtpSend(true);
-              } else {
-                toast.error(res.message);
-              }
-            });
-        } catch (err) {
-          console.log(err);
-        }
+        const formData = new FormData();
+        formData.append("name", values.name);
+        formData.append("email", values.email);
+        formData.append("password", values.password);
+        formData.append("image", image);
+        dispatch(signupUser(formData))
+          .unwrap()
+          .then((res) => {
+            console.log(res);
+            if (res.success) {
+              toast.success(res.message);
+              localStorage.setItem("userData", JSON.stringify(res.data));
+              setIsOtpSend(true);
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+            toast.error(error.message);
+          });
       },
     });
   return (
@@ -129,13 +128,20 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
             )}
           </div>
 
-          <button
+          {/* <button
             type="submit"
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-2 rounded-xl hover:bg-indigo-700 transition-colors font-semibold"
           >
             {loading ? "Signing up..." : "Sign Up"}
-          </button>
+          </button> */}
+          <SubmitButton
+            type="submit"
+            loading={loading}
+            buttonName="Sign Up"
+            isUnverified={false}
+            disabled={loading}
+          />
         </form>
 
         <p className="text-center text-gray-500 mt-4">
