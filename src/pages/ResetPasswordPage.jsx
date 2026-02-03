@@ -51,7 +51,7 @@ const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
     });
   console.log(errors);
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-2">
+    <div className="min-h-screen flex items-center justify-center ">
       <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         {/* Icon */}
         <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-6">

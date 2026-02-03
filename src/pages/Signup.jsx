@@ -50,7 +50,7 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
       },
     });
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-2">
+    <div className="min-h-screen flex items-center justify-center ">
       <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-center text-gray-800 mb-2 lg:mb-6">
           Create Account

@@ -46,7 +46,8 @@ const AuthForm = () => {
     }
   };
   return (
-    <>
+    // bg-[#574CD6]/60
+    <div className="bg-[#574CD6]/70">
       {isOtpSend ? (
         <VerifyEmailPage
           currentForm={currentForm}
@@ -57,7 +58,7 @@ const AuthForm = () => {
       ) : (
         renderForm()
       )}
-    </>
+    </div>
   );
 };
 

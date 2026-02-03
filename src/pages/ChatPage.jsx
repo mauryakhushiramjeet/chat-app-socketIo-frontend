@@ -1012,9 +1012,9 @@ const ChatPage = () => {
       </div>
 
       {/* Chat Area - Clean white background with flex-column */}
-      <div className="flex-1 flex flex-col relative bg-white">
+      <div className="flex-1 flex flex-col relative bg-chatImg bg-cover bg-center bg-no-repeatg ">
         {!selectedUser ? (
-          <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-400">
+          <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <LuSmilePlus size={40} className="text-[#574cd6]" />
             </div>
@@ -1135,11 +1135,10 @@ const ChatPage = () => {
             </div>
 
             {/* Messages Area - Subtle background color change */}
-
             <div
               ref={chatTopRef}
               onScroll={handleScroll}
-              className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto bg-[#F9FAFB] space-y-7"
+              className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto space-y-7"
             >
               {isChatLoading && <ChatMessageShimmer />}
               {(messages || []).map((msg, index) => {

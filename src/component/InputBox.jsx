@@ -80,7 +80,7 @@ const InputBox = ({
     if (selectedFiles?.length > 10 && fileLimitError === false) {
       setFileLimitError(true);
     }
-  }, [selectedFiles,fileLimitError]);
+  }, [selectedFiles, fileLimitError]);
 
   useEffect(() => {
     if (fileErrorRef?.current) {
@@ -100,6 +100,7 @@ const InputBox = ({
         u.receiverId === logedInUser?.id &&
         Number(u.groupId) === Number(selectedUser?.id?.split("-")[1]),
     ) || [];
+  console.log(selectedFiles?.length);
   return (
     <div className="items-center">
       {selectedUser?.type === "group" && typingUsers?.length > 0 && (
@@ -144,7 +145,7 @@ const InputBox = ({
         )}
       <div className="flex gap-2 items-center w-full">
         <div
-          className="relative  w-full rounded-xl border-[1px] border-gray-300 focus-within:border-b-2 2xl:focus-within:border-b-4 focus-within:border-b-[#786FDD]"
+          className="relative  w-full rounded-xl border-[1px] bg-white border-gray-300 focus-within:border-b-2 2xl:focus-within:border-b-4 focus-within:border-b-[#786FDD]"
           onClick={() => textRef.current?.focus()}
         >
           <div

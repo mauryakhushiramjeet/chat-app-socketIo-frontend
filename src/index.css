@@ -40,13 +40,13 @@
 }
 
 @media screen and (min-width: 1660px) {
- .typing span {
-  width: 10px;
-  height: 10px;
-  margin-left: 4px;
-  border-radius: 50%;
-  animation: blink 1.4s infinite both;
-}
+  .typing span {
+    width: 10px;
+    height: 10px;
+    margin-left: 4px;
+    border-radius: 50%;
+    animation: blink 1.4s infinite both;
+  }
 }
 
 /* Custom Scrollbar for the Sidebar */
@@ -80,7 +80,7 @@
 }
 /* Add this in your CSS file or global styles */
 /* .hide-scrollbar::-webkit-scrollbar { */
-  /* display: none;  */
+/* display: none;  */
 /* } */
 /* .hide-scrollbar {
   -ms-overflow-style: none;  
@@ -89,26 +89,26 @@
 
 /* Entire scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;          /* width of vertical scrollbar */
-  height: 8px;         /* height of horizontal scrollbar */
+  width: 8px; /* width of vertical scrollbar */
+  height: 8px; /* height of horizontal scrollbar */
 }
 
 /* Scrollbar track (background) */
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;  /* light gray track */
-  border-radius: 4px;   /* rounded corners */
+  background: #f1f1f1; /* light gray track */
+  border-radius: 4px; /* rounded corners */
 }
 
 /* Scrollbar thumb (draggable part) */
 ::-webkit-scrollbar-thumb {
-  background-color: #948CEE; /* your main color */
+  background-color: #948cee; /* your main color */
   border-radius: 4px;
   border: 2px solid #f1f1f1; /* optional padding around thumb */
 }
 
 /* Scrollbar thumb on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #4633A6; /* darker on hover */
+  background-color: #4633a6; /* darker on hover */
 }
 
 .emoji-picker {
@@ -117,6 +117,6 @@
   --epr-header-padding: 10px;
   --epr-search-height: 36px;
 
- --epr-picker-width: 300px !important;
+  --epr-picker-width: 300px !important;
   --epr-picker-height: 300px !important;
 }

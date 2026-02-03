@@ -79,7 +79,7 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
     });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-2">
+    <div className="min-h-screen flex items-center justify-center  p-2">
       <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         {showEmailVerifyFeild ? (
           <div className="space-y-6">
