@@ -44,7 +44,7 @@ const ChatPage = () => {
   const [message, setMessage] = useState("");
   const [typingUserId, setTypingUserId] = useState({});
   const [typingInfo, setTypingInfo] = useState({});
-  const [deleteMessageId, setDeleteMessageId] = useState(null);
+  // const [deleteMessageId, setDeleteMessageId] = useState(null);
   const [showImozi, setShowImozi] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [editMessageId, setEditMessageId] = useState(null);
@@ -53,7 +53,7 @@ const ChatPage = () => {
   const [privateMessages, setPrivateMessages] = useState([]);
   const [groupMessages, setGroupMessages] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
-  const [lastSendMsgId, setLastSendMsgId] = useState();
+  // const [lastSendMsgId, setLastSendMsgId] = useState();
   const [seenMembers, setSeenMberes] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [showChatOptions, setShowChatOptions] = useState(false);
@@ -62,8 +62,7 @@ const ChatPage = () => {
   const [replyTomessage, setReplyToMessage] = useState(null);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [firstMessageId, setFirstMessageId] = useState(null);
-  const [prevHeight, setPrevHeight] = useState({});
-  const [isPagination, setIsPagination] = useState(false);
+  // const [isPagination, setIsPagination] = useState(false);
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
   const messageReplyRef = useRef([]);
@@ -143,7 +142,6 @@ const ChatPage = () => {
       if (receiverId !== logedInUser?.id) return;
 
       if (type === "group") {
-      
         setTypingUserId((prev) => ({ ...prev, [`group_${senderId}`]: true }));
         const data = {
           receiverId,
@@ -416,7 +414,7 @@ const ChatPage = () => {
     );
     newSocket.on("receiveGropMessage", (data) => {
       setReplyToMessage(null);
-      setLastSendMsgId(Number(data?.lastMessageId));
+      // setLastSendMsgId(Number(data?.lastMessageId));
       setGroupMessages((prevMessages) => {
         const currentSelectedUser = selectedUserRef.current;
         if (currentSelectedUser?.id !== data?.groupId) return;
@@ -459,7 +457,7 @@ const ChatPage = () => {
       setSeenMberes(memebers);
     });
     return () => newSocket.disconnect();
-  }, [logedInUser?.id]);
+  }, [logedInUser]);
   const messages = useMemo(() => {
     if (selectedUser?.type === "group") {
       return groupMessages;
@@ -525,7 +523,7 @@ const ChatPage = () => {
         lastMessageId: null,
       }),
     );
-  }, [logedInUser?.id, selectedUser?.id, dispatch]);
+  }, [logedInUser?.id, selectedUser?.id, selectedUser, dispatch]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("userData"));
@@ -591,7 +589,6 @@ const ChatPage = () => {
     setSelectedFiles([]);
     setPrivateMessages([]);
     setFirstMessageId(null);
-    setPrevHeight(null);
   }, [selectedUser]);
 
   useLayoutEffect(() => {
@@ -678,7 +675,7 @@ const ChatPage = () => {
     if (!onlineUsers.includes(String(logedInUser?.id)) || selectedUser) return;
     const receiverId = logedInUser?.id;
     dispatch(getAllReceiverMesages({ receiverId }));
-  }, [logedInUser?.id, dispatch, messages, onlineUsers]);
+  }, [logedInUser?.id, dispatch, messages, onlineUsers, selectedUser]);
   useEffect(() => {
     if (
       !receiverMessageStore.isError &&
@@ -706,12 +703,7 @@ const ChatPage = () => {
       setGroupMessages((prev) => [...newMessages, ...prev]);
     }
     isFetchingOldRef.current = false;
-    setIsPagination(false);
-  }, [
-    groupMessageStore.messages,
-    groupMessageStore.loadType,
-    groupMessageStore.members,
-  ]);
+  }, [groupMessageStore]);
   useEffect(() => {
     if (!socket || !logedInUser?.id) return;
     if (allReceiverMessages.length === 0 || !allReceiverMessages) return;
@@ -726,7 +718,7 @@ const ChatPage = () => {
     const groupId = id.split("-")[1];
     const senderId = logedInUser?.id;
     dispatch(getGroupMessages({ senderId, groupId, lastMessageId: null }));
-  }, [selectedUser, logedInUser?.id]);
+  }, [selectedUser, logedInUser?.id, dispatch]);
 
   useEffect(() => {
     if (!groupMessages || groupMessages?.length === 0) return;
@@ -763,7 +755,15 @@ const ChatPage = () => {
         }
       })
       .catch((error) => [console.log(error)]);
-  }, [groupMessages, logedInUser?.id, selectedUser?.id]);
+  }, [
+    groupMessages,
+    logedInUser?.id,
+    selectedUser?.id,
+    selectedUser.type,
+    socket,
+    groupMembers,
+    dispatch,
+  ]);
   const getDate = (date) => {
     const now = new Date(date);
     const hours24 = now.getHours();
@@ -790,8 +790,9 @@ const ChatPage = () => {
       setPrivateMessages((prev) => [...newMessages, ...prev]);
     }
     isFetchingOldRef.current = false;
-    setIsPagination(false);
+    // setIsPagination(false);
   }, [
+    messageStore,
     messageStore?.messages,
     messageStore?.loadType,
     messageStore?.isLoading,
@@ -800,14 +801,14 @@ const ChatPage = () => {
   const loadOldChats = (lastMessageId) => {
     if (!isFetchingOldRef.current) return;
 
-    const el = chatTopRef.current;
+    // const el = chatTopRef.current;
     if (firstMessageId === lastMessageId) return;
-    setPrevHeight({
-      prevScrollTop: el.scrollTop,
-      prevScrollHeight: el.scrollHeight,
-    });
+    // setPrevHeight({
+    //   prevScrollTop: el.scrollTop,
+    //   prevScrollHeight: el.scrollHeight,
+    // });
 
-    setIsPagination(true);
+    // setIsPagination(true);
     if (selectedUser?.type === "chat") {
       dispatch(
         getAllMessages({
@@ -1230,7 +1231,7 @@ const ChatPage = () => {
                             <EditMessageArea
                               editedMessage={editedMessage}
                               setEditedMessage={setEditedMesage}
-                              setEditMessageId={setDeleteMessageId}
+                              // setEditMessageId={setDeleteMessageId}
                               editMessageId={editMessageId}
                               logedInUser={logedInUser}
                               selectedUser={selectedUser}
@@ -1287,7 +1288,7 @@ const ChatPage = () => {
                                   {isMe && (
                                     <button
                                       onClick={() => {
-                                        setDeleteMessageId(msg?.id);
+                                        // setDeleteMessageId(msg?.id);
                                         // deleteMessageIdRef.current = msg?.id;
                                         setIsModelOpen(msg?.id);
                                       }}

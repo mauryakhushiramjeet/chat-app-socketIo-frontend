@@ -1,6 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { getGroupMessages } from "../actions/messageActions";
-import { act } from "react";
 
 const getGroupMessagesSlice = createSlice({
   name: "groupMessages",

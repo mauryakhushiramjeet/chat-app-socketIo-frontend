@@ -209,7 +209,7 @@ const Sidebar = ({
 
       setUsers(normalizedUsers);
     }
-  }, [sidebarChatListStore]);
+  }, [sidebarChatListStore,logedInUser?.id]);
   useEffect(() => {
     usersRef.current = users;
   }, [users]);

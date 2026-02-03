@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TypingIndicator from "../component/TypingIndicator";
 import { LuSmilePlus } from "react-icons/lu";
 import { ImAttachment } from "react-icons/im";
@@ -12,7 +12,6 @@ import { LuLoaderCircle } from "react-icons/lu";
 import { getdefaultProfile } from "../helper/filePre";
 import { getDate } from "../helper/getDate";
 import ImojiPiker from "./ImojiPiker";
-import { loginUser } from "../store/actions/userActions";
 import { getGroupMemberName } from "../helper/chatPageHelper";
 
 const InputBox = ({
@@ -69,7 +68,6 @@ const InputBox = ({
     fileBottomRef.current.scrollTop = fileBottomRef.current.scrollHeight;
   }, [selectedFiles]);
   const handleImages = (e) => {
-    const file = e.target?.files[0];
     const arrayFile = Array.from(e.target?.files);
     setSelectedFiles((prev) => [...prev, ...arrayFile]);
   };
@@ -82,7 +80,7 @@ const InputBox = ({
     if (selectedFiles?.length > 10 && fileLimitError === false) {
       setFileLimitError(true);
     }
-  }, [selectedFiles]);
+  }, [selectedFiles,fileLimitError]);
 
   useEffect(() => {
     if (fileErrorRef?.current) {

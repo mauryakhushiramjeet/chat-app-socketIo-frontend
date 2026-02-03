@@ -6,7 +6,6 @@ import {
   resendMailForgetPassword,
   verifyOtp,
 } from "../store/actions/verifyOtpActions";
-import { useNavigate } from "react-router-dom";
 
 const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
   const [otp, setOtp] = useState(new Array(6).fill(""));

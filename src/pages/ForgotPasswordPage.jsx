@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-import { useNavigate, Link } from "react-router-dom";
 import { forgetPassword_EmailVerify } from "../store/actions/verifyOtpActions";
 import { forgetPassword_EmailSchema } from "../utills/authSchema";
 import { useFormik } from "formik";

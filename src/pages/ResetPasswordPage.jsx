@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
 // import { resetPassword } from "../store/actions/authActions";
 import { useFormik } from "formik";
 import { resetPassword } from "../store/actions/userActions";

@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { FaCheck } from "react-icons/fa";
 import { RxCross2, RxCross1 } from "react-icons/rx";
 import { RiVideoFill } from "react-icons/ri";
 import { AiOutlineFile } from "react-icons/ai";
@@ -18,7 +17,7 @@ const EditMessageArea = ({
   setEditedMessage,
   onCancel,
   onSave,
-  setEditMessageId,
+  // setEditMessageId,
   editMessageId,
   logedInUser,
   socket,
@@ -132,8 +131,8 @@ const EditMessageArea = ({
         // console.log(error);
         setLoading(false);
       });
-    setEditMessageId(null);
-    setEditMessageId("");
+    // setEditMessageId(null);
+    // setEditMessageId("");
   };
   useEffect(() => {
     if (fileErrorRef?.current) {
