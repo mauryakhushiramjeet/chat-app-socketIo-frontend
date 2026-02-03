@@ -35,7 +35,12 @@ const AuthForm = () => {
           />
         );
       case "reset-password":
-        return <ResetPasswordPage setCurrentForm={setCurrentForm} setIsOtpSend={setIsOtpSend} />;
+        return (
+          <ResetPasswordPage
+            setCurrentForm={setCurrentForm}
+            setIsOtpSend={setIsOtpSend}
+          />
+        );
       default:
         return <div>Invalid Form</div>;
     }
@@ -46,7 +51,7 @@ const AuthForm = () => {
         <VerifyEmailPage
           currentForm={currentForm}
           setCurrentForm={setCurrentForm}
-        //   email={JSON.parse(localStorage.getItem("userData").email)}
+          //   email={JSON.parse(localStorage.getItem("userData").email)}
           setIsOtpSend={setIsOtpSend}
         />
       ) : (

@@ -51,8 +51,8 @@ const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
     });
   console.log(errors);
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-4 font-sans">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-2">
+      <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         {/* Icon */}
         <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-6">
           <svg
@@ -70,16 +70,17 @@ const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
           </svg>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-center text-gray-800 mb-2 lg:mb-6">
           Set New Password
         </h1>
-        <p className="text-gray-500 mb-8">
+        <p className="text-gray-500 mb-8 text-center text-sm sm:text-base">
           Your new password must be different from previously used passwords.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5 text-left">
+        <form onSubmit={handleSubmit} className="space-y-3 text-left">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 ml-1">
+            <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">
+              {" "}
               New Password
             </label>
             <input
@@ -88,7 +89,7 @@ const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
               placeholder="•••••••"
               onChange={handleChange}
               onBlur={handleBlur}
-              className="w-full px-4 py-3 border-2 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+              className="w-full px-4 py-2 border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30"
             />
             {touched?.password && errors?.password && (
               <p className="text-red-600 text-sm mt-1">{errors?.password}</p>
@@ -96,7 +97,8 @@ const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 ml-1">
+            <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">
+              {" "}
               Confirm New Password
             </label>
             <input
@@ -105,7 +107,7 @@ const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
               placeholder="••••••••"
               onChange={handleChange}
               onBlur={handleBlur}
-              className="w-full px-4 py-3 border-2 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+              className="w-full px-4 py-2 border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30"
             />
             {touched?.confirmPassword && errors?.confirmPassword && (
               <p className="text-red-600 text-sm mt-1">
@@ -121,7 +123,7 @@ const ResetPasswordPage = ({ setCurrentForm, setIsOtpSend }) => {
           >
             {loading ? "Updating..." : "Reset Password"}
           </button> */}
-           <SubmitButton
+          <SubmitButton
             type="submit"
             loading={loading}
             buttonName="Reset Password"

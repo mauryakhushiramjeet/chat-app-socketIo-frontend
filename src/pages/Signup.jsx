@@ -6,9 +6,13 @@ import { signupUser } from "../store/actions/userActions.js";
 import { useFormik } from "formik";
 import { signupSchema } from "../utills/authSchema.js";
 import SubmitButton from "../component/SubmitButton.jsx";
+import { IoEye } from "react-icons/io5";
+import { IoEyeOff } from "react-icons/io5";
 const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const dispatch = useDispatch();
 
   const initialValues = {
@@ -46,21 +50,21 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
       },
     });
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-4">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-2">
+      <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
+        <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-center text-gray-800 mb-2 lg:mb-6">
           Create Account
         </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Name</label>
+            <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">Name</label>
             <input
               type="text"
               name="name"
               value={values.name}
               onBlur={handleBlur}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full px-4 py-2 border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30"
               placeholder="Your full name"
             />
             {touched.name && errors.name && (
@@ -69,7 +73,7 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">
               Email
             </label>
             <input
@@ -78,7 +82,7 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
               value={values.email}
               onBlur={handleBlur}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full px-4 py-2 border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30"
               placeholder="you@example.com"
             />
             {touched.email && errors.email && (
@@ -87,18 +91,28 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              value={values.password}
-              onBlur={handleBlur}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Enter your password"
-            />
+            <div className="relative flex items-center ">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={values.password}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30
+                                 
+                                `}
+                placeholder="........"
+              />
+              <span
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="cursor-pointer right-3 text-[#4338CA]/80 text-xl sm:text-2xl absolute"
+              >
+                {!showPassword ? <IoEyeOff /> : <IoEye />}
+              </span>
+            </div>
             {touched.password && errors.password && (
               <p className="text-red-600 text-sm mt-1">{errors.password}</p>
             )}
@@ -144,7 +158,7 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
           />
         </form>
 
-        <p className="text-center text-gray-500 mt-4">
+        <p className="text-center text-gray-500 mt-4 text-sm md:text-base">
           Already have an account?{" "}
           <span
             onClick={() => setCurrentForm("login")}

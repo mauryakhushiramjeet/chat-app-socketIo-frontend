@@ -7,12 +7,14 @@ import { loginUser } from "../store/actions/userActions";
 import { email_verify_Schema, loginSchema } from "../utills/authSchema";
 import { resendEmailVerification } from "../store/actions/verifyOtpActions";
 import SubmitButton from "../component/SubmitButton";
+import { IoEye } from "react-icons/io5";
+import { IoEyeOff } from "react-icons/io5";
 
 const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
   const [loading, setLoading] = useState(false);
   const [isUnverified, setIsUnverified] = useState(false);
   const [showEmailVerifyFeild, setShowEmailVerifyFeild] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -77,8 +79,8 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
     });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-4">
-      <div className="bg-white shadow-xl rounded-[25px] p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-2">
+      <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         {showEmailVerifyFeild ? (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
@@ -88,7 +90,7 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
               Enter your email to receive a new verification link.
             </p>
             <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
                   <label className="block text-gray-700 font-medium mb-1">
                     Email Address
@@ -100,20 +102,12 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     placeholder="petermiller@gmail.com"
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all ${
-                      touched.email && errors.email
-                        ? "border-red-500"
-                        : "border-gray-200"
-                    }`}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all 
+                      "border-gray-200
+                    `}
                   />
                 </div>
-                {/* <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all"
-              >
-                {loading ? "Sending..." : "Send Verification Link"}
-              </button> */}
+
                 <SubmitButton
                   type="submit"
                   loading={loading}
@@ -131,13 +125,13 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
           </div>
         ) : (
           <>
-            <h1 className="text-3xl font-bold text-center text-[#1a1a1a] mb-8">
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-center text-gray-800 mb-2 lg:mb-6">
               Login
             </h1>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="block text-gray-600 font-medium mb-1 text-sm">
+                <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">
                   Email
                 </label>
                 <input
@@ -146,11 +140,8 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
                   value={values.email}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-                    touched.email && errors.email
-                      ? "border-red-500"
-                      : "border-gray-200"
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30
+                  `}
                   placeholder="petermiller@gmail.com"
                 />
                 {touched.email && errors.email && (
@@ -159,22 +150,28 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
               </div>
 
               <div>
-                <label className="block text-gray-600 font-medium mb-1 text-sm">
+                <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">
                   Password
                 </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={values.password}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-                    touched.password && errors.password
-                      ? "border-red-500"
-                      : "border-gray-200"
-                  }`}
-                  placeholder="........"
-                />
+                <div className="relative flex items-center ">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={values.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className={`w-full px-4 py-2 border rounded-xl text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30
+                      
+                     `}
+                    placeholder="........"
+                  />
+                  <span
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="cursor-pointer right-3 text-[#4338CA]/80 text-xl sm:text-2xl absolute"
+                  >
+                    {!showPassword ? <IoEyeOff /> : <IoEye />}
+                  </span>
+                </div>
                 {touched.password && errors.password && (
                   <p className="text-red-600 text-xs mt-1">{errors.password}</p>
                 )}
@@ -202,7 +199,7 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-gray-600 text-sm md:text-base">
                 Create new account?{" "}
                 <span
                   onClick={() => setCurrentForm("signup")}
@@ -214,7 +211,7 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
               <button
                 type="button"
                 onClick={() => setCurrentForm("forget-password")}
-                className="text-sm text-indigo-500 font-semibold mt-2 cursor-pointer hover:underline"
+                className="text-sm text-indigo-500 font-semibold mt-2 cursor-pointer hover:underline md:text-base"
               >
                 Forgot Password?
               </button>

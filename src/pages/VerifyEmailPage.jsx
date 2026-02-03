@@ -153,8 +153,8 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
       .padStart(2, "0")}`;
   };
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-4 font-sans">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#574CD6]/60 p-2">
+      <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-6">
           <svg
             className="w-8 h-8 text-indigo-600"
@@ -171,17 +171,17 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
           </svg>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-center text-gray-800 mb-2 lg:mb-6">
           {currentForm === "forget-password"
             ? "Reset Password"
             : "Verify Email"}
         </h1>
-        <p className="text-gray-500 mb-8">
+        <p className="text-gray-500 mb-8 text-center text-sm sm:text-base ">
           We've sent a 6-digit verification code to <br />
           <span className="font-semibold text-gray-700">{email}</span>
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-6">
           <div className="flex justify-between gap-2">
             {otp.map((data, index) => (
               <input
@@ -193,7 +193,7 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
                 value={data}
                 onChange={(e) => handleChange(e.target, index)}
                 onKeyDown={(e) => handleKeyDown(e, index)}
-                className={`w-12 h-14 border-2 rounded-xl text-center text-xl font-bold outline-none transition-all ${
+                className={`w-10 xs:w-12 md:w-12 h-12 sm:h-14 border-2 rounded-xl text-center text-xl font-bold outline-none transition-all ${
                   timer === 0
                     ? "bg-gray-100 border-gray-200 text-gray-400"
                     : "text-indigo-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
@@ -235,7 +235,7 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
           </button> */}
         </form>
 
-        <div className="mt-8">
+        <div className="mt-4 sm:mt-6 lg:mt-8 text-sm sm:text-base">
           <p className="text-gray-500">
             Didn't receive the code?{" "}
             <button
