@@ -8,7 +8,7 @@ export const verifyOtp = createAsyncThunk(
       const response = await axiosInstance.post("/verifyEmailOtp", data);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || "Signup failed");
+      return rejectWithValue(error.response?.data || error?.message);
     }
   },
 );
@@ -19,7 +19,7 @@ export const resendEmailVerification = createAsyncThunk(
       const response = await axiosInstance.post("/resendMail", email);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || "resend mail failed");
+      return rejectWithValue(error.response?.data || error?.message);
     }
   },
 );
@@ -32,7 +32,7 @@ export const resendMailForgetPassword = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || "resend mail failed");
+      return rejectWithValue(error.response?.data || error?.message);
     }
   },
 );
@@ -46,7 +46,7 @@ export const forgetPassword_EmailVerify = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data.message || "resend mail failed",
+        error.response?.data.message || error?.message,
       );
     }
   },

@@ -13,7 +13,7 @@ export const getAllMessages = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
   },
 );
@@ -25,12 +25,11 @@ export const getAllReceiverMesages = createAsyncThunk(
       const response = await axiosInstance.get("/getAllMyMessages", {
         params: { receiverId },
       });
-      // console.log(response);
-      // console.log(response.data.messages, "in api cheaking at call");
+   
       return response.data.messages;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
   },
 );
@@ -42,7 +41,7 @@ export const sendMessage = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
   },
 );
@@ -54,7 +53,7 @@ export const sendGroupMessage = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
   },
 );
@@ -70,9 +69,7 @@ export const getGroupMessages = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(
-        error?.response?.data?.message || "Something went wrong",
-      );
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
   },
 );
@@ -89,9 +86,7 @@ export const updateMembersLastMsgSeenId = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(
-        error?.response?.data?.message || "Something went wrong",
-      );
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
   },
 );
@@ -103,7 +98,7 @@ export const updateMessageFile = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
   },
 );

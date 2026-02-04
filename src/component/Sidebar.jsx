@@ -44,6 +44,7 @@ const Sidebar = ({
   const usersRef = useRef([]);
   const { showProfile, setShowProfile } = useContext(ProfileContext);
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [initialProfile, setInitialProfile] = useState({
     name: logedInUser?.name,
     about: "Available",
@@ -236,6 +237,7 @@ const Sidebar = ({
         // );
         // console.log("conversationId", conversationId);
         // console.log(lastMessageId, "lastmessageId");
+        console.log(conversationId, "selected UserId", selectedUser?.id);
         setUsers((prevUsers) => {
           const conversationIndex = prevUsers.findIndex(
             (item) =>
@@ -416,10 +418,10 @@ const Sidebar = ({
       );
     });
   }, [users]);
-
+  console.log(sortedUsers);
   const upadteProfileImage = async () => {
     try {
-      setLoading(true);
+      setProfileLoading(true);
 
       const formData = new FormData();
       formData.append("name", profile?.name);
@@ -432,16 +434,17 @@ const Sidebar = ({
           if (res.success) {
             toast.success(res.message);
             localStorage.setItem("userData", JSON.stringify(res?.user));
-            setLoading(false);
+            setProfileLoading(false);
 
-            navigate("/chat");
+            setShowProfile(false);
           } else {
             toast.error(res.message);
-            setLoading(false);
+            setProfileLoading(false);
           }
         });
     } catch (err) {
       console.log(err, "profile update error");
+      setProfileLoading(false);
     }
   };
 
@@ -745,12 +748,13 @@ const Sidebar = ({
             <SubmitButton
               type="button"
               onClick={() => upadteProfileImage()}
-              loading={loading}
+              loading={profileLoading}
               buttonName={"Save Changes"}
-              disabled={loading}
+              disabled={profileLoading}
               className={`w-[200px]  md:w-full px-8 md:px-0 ${
                 isChanged ? "bg-gray-100 hover:bg-gray-100" : "bg-gray-100/50"
               }  text-[#574CD6] py-2 md:py-[6px] rounded-xl font-medium 2xl:font-bold  shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
+              iconColor={"text-[#574CD6]"}
             />
             <SubmitButton
               type="button"
@@ -854,12 +858,12 @@ const Sidebar = ({
             <MdGroupAdd className="text-white/60 group-hover:text-white text-2xl" />
           </button>
         </div>
-
+        {/* ${["Send", "Delivered"].includes(userCoversation?.status) && userCoversation?.messageSenderId !== logedInUser?.id ? "bg-gray-50/30 shadow-2xl" : ""} */}
         {(sortedUsers || []).map((userCoversation) => (
           <div
             key={userCoversation.id}
             onClick={() => handleUserChatSelect(userCoversation)}
-            className={`flex items-center gap-4 sm:gap-7 md:gap-3 p-2 lg:p-3 mb-1 rounded-2xl cursor-pointer user-item-transition group ${
+            className={`  flex items-center gap-4 sm:gap-7 md:gap-3 p-2 lg:p-3 mb-1 rounded-2xl cursor-pointer user-item-transition group ${
               selectedUser?.id === userCoversation?.id
                 ? "bg-white text-[#a69efa] shadow-lg"
                 : "hover:bg-white/10"

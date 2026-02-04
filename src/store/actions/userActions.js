@@ -36,8 +36,9 @@ export const loginUser = createAsyncThunk(
       const response = await axiosInstance.post("/login", data);
       return response.data;
     } catch (error) {
+      console.log(error)
       return rejectWithValue(
-        error?.response?.data?.message || "Something went wrong ",
+        error?.response?.data?.message || error?.message,
       );
     }
   },
@@ -51,8 +52,9 @@ export const getAllFriends = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
-    }
+ return rejectWithValue(
+        error?.response?.data?.message || error?.message,
+      );    }
   },
 );
 export const resetPassword = createAsyncThunk(
@@ -66,8 +68,9 @@ export const resetPassword = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
-    }
+ return rejectWithValue(
+        error?.response?.data?.message || error?.message,
+      );    }
   },
 );
 export const getConversationsUsers = createAsyncThunk(
@@ -80,8 +83,9 @@ export const getConversationsUsers = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
-    }
+ return rejectWithValue(
+        error?.response?.data?.message || error?.message,
+      );    }
   },
 );
 
@@ -93,7 +97,8 @@ export const updateProfileThunk = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
-    }
+ return rejectWithValue(
+        error?.response?.data?.message || error?.message,
+      );    }
   },
 );

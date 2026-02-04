@@ -11,7 +11,7 @@ export const getSidebarChatList = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(error?.response?.data?.message);
+      return rejectWithValue(error?.response?.data?.message||error?.message);
     }
   }
 );

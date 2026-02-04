@@ -9,9 +9,8 @@ export const createGroup = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-      return rejectWithValue(
-        error.response?.data?.message || "Group creation failed"
-      );
+           return rejectWithValue(error?.response?.data?.message||error?.message);
+
     }
   }
 );

@@ -100,7 +100,6 @@ const InputBox = ({
         u.receiverId === logedInUser?.id &&
         Number(u.groupId) === Number(selectedUser?.id?.split("-")[1]),
     ) || [];
-  console.log(selectedFiles?.length);
   return (
     <div className="items-center">
       {selectedUser?.type === "group" && typingUsers?.length > 0 && (
