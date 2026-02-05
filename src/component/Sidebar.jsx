@@ -12,7 +12,10 @@ import {
 import { MdGroupAdd } from "react-icons/md";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { createGroup } from "../store/actions/groupAction";
+import {
+  createGroup,
+  getUserSeenMsgDetaiils,
+} from "../store/actions/groupAction";
 import { getSidebarChatList } from "../store/actions/sidebarChatListActions";
 import Profile from "./Profile";
 import { ProfileContext } from "../utills/context/ProfileContext";
@@ -39,9 +42,8 @@ const Sidebar = ({
   const [showGroupCreate, setShowGroupCreate] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
+  const [userMsgSeenDetails, setUserMsgSeenDetails] = useState({});
   const [groupImage, setGroupImage] = useState({ image: "", file: null });
-  const groupFileInputRef = useRef(null);
-  const usersRef = useRef([]);
   const { showProfile, setShowProfile } = useContext(ProfileContext);
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -57,6 +59,10 @@ const Sidebar = ({
     image: logedInUser?.image || "",
     file: "",
   });
+  const groupFileInputRef = useRef(null);
+  const usersRef = useRef([]);
+  const userMsgSeenRef = useRef([]);
+
   const sidebarChatListStore = useSelector((store) => store.sidebarChatList);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
@@ -167,7 +173,6 @@ const Sidebar = ({
     }));
     dispatch(getSidebarChatList({ loggedInUserId: logedInUser?.id }));
   }, [logedInUser, dispatch]);
-
   const getSidebarLastMessage = (item) => {
     if (
       item?.lastMessage?.trim() === "" &&
@@ -186,16 +191,51 @@ const Sidebar = ({
     }
     return "Tap to chat";
   };
-  // console.log(selectedUser);
+  const groupListIds = useMemo(() => {
+    if (sidebarChatListStore?.isError || sidebarChatListStore?.isLoading)
+      return;
+
+    return sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions
+      ?.filter((item) => item.type === "group")
+      .map((item) => item.id);
+  }, [sidebarChatListStore]);
+
+  useEffect(() => {
+    if (!groupListIds?.length || !logedInUser?.id) return;
+
+    groupListIds.forEach((groupId) => {
+      if (userMsgSeenRef.current[groupId]) return;
+
+      dispatch(
+        getUserSeenMsgDetaiils({
+          groupId,
+          userId: logedInUser.id,
+        }),
+      )
+        .unwrap()
+        .then((res) => {
+          if (res?.success) {
+            setUserMsgSeenDetails((prev) => ({
+              ...prev,
+              [groupId]: res.userMsgSeenDetaile,
+            }));
+          }
+        })
+        .catch(console.error);
+    });
+  }, [groupListIds, logedInUser, dispatch]);
+
+  useEffect(() => {
+    userMsgSeenRef.current = userMsgSeenDetails;
+  }, [userMsgSeenDetails]);
+
   useEffect(() => {
     if (!sidebarChatListStore?.isError && !sidebarChatListStore?.isLoading) {
-      // console.log(
-      //   sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions,
-      //   "user",
-      // );
       const normalizedUsers = (
         sidebarChatListStore?.chatList?.sidebarchatsAndGroupConverstions || []
       ).map((item) => {
+        const groupUserSeenDetail = userMsgSeenDetails[item.id];
+
         return {
           id: item.type === "group" ? `group-${item.id}` : item.chatUser?.id,
           mainId: item.id,
@@ -203,10 +243,18 @@ const Sidebar = ({
           name: item.type === "group" ? item.name : item.chatUser?.name,
           image: item.type === "group" ? item.groupImage : item.chatUser?.image,
           lastMessage: getSidebarLastMessage(item),
-          status: item?.type === "group" ? "Send" : item.status,
+          status:
+            item?.type === "group"
+              ? !Number(item?.lastMessageId)
+                ? null
+                : Number(item?.lastMessageId) ===
+                    Number(groupUserSeenDetail?.lastSeenMessageId)
+                  ? "Read"
+                  : "Delivered"
+              : item.status,
           lastMessageId: item.lastMessageId,
-          messageSenderId:
-            item.type === "group" ? logedInUser?.id : item?.messageSenderId,
+
+          messageSenderId: item?.messageSenderId,
           LastActiveAt:
             item.type === "group" ? null : item.chatUser?.LastActiveAt,
           lastMessageCreatedAt: item.lastMessageCreatedAt || null,
@@ -215,36 +263,23 @@ const Sidebar = ({
 
       setUsers(normalizedUsers);
     }
-  }, [sidebarChatListStore, logedInUser?.id]);
+  }, [sidebarChatListStore, logedInUser?.id, userMsgSeenDetails]);
   useEffect(() => {
     usersRef.current = users;
   }, [users]);
+
   useEffect(() => {
     if (!socket) return;
 
     socket.on(
       "newMessage",
       ({ response, targetChatUserId, conversationId, type, lastMessageId }) => {
-        // console.log("mnasbjhga");
-        // console.log(
-        //   "new message",
-        //   response,
-        //   "targetListId",
-        //   targetChatUserId,
-        //   conversationId,
-        //   type,
-        //   lastMessageId
-        // );
-        // console.log("conversationId", conversationId);
-        // console.log(lastMessageId, "lastmessageId");
-        console.log(conversationId, "selected UserId", selectedUser?.id);
         setUsers((prevUsers) => {
           const conversationIndex = prevUsers.findIndex(
             (item) =>
               String(item.id) === String(targetChatUserId) &&
               item.type === type,
           );
-          // console.log(conversationIndex, "index");
           if (conversationIndex !== -1) {
             const updatedUsers = [...prevUsers];
             updatedUsers[conversationIndex] = {
@@ -253,11 +288,17 @@ const Sidebar = ({
                 response.text.trim() === "" ? "Send a file" : response.text,
               lastMessageCreatedAt: new Date(),
               lastMessageId,
+
+              status:
+                (!selectedUser ||
+                  selectedUser.id !== conversationId.chatUserId) &&
+                conversationId.chatUserId === logedInUser?.id
+                  ? "Delivered"
+                  : response?.status,
             };
             return updatedUsers;
           } else {
             if (type === "group") return;
-            // console.log("new chat created here");
             return [
               {
                 id: targetChatUserId,
@@ -267,6 +308,12 @@ const Sidebar = ({
                 image: conversationId.chatUser.image,
                 lastMessage: response.text,
                 lastMessageId,
+                status:
+                  (!selectedUser ||
+                    selectedUser.id !== conversationId.chatUserId) &&
+                  conversationId.chatUserId === logedInUser?.id
+                    ? "Delivered"
+                    : response?.status,
                 lastMessageCreatedAt: new Date(),
               },
               ...prevUsers,
@@ -275,14 +322,8 @@ const Sidebar = ({
         });
       },
     );
+
     socket.on("status:Read", ({ messageId, conversationId }) => {
-      console.log(
-        "get delive in red",
-        messageId,
-        "messgeId",
-        conversationId,
-        "mainId",
-      );
       setUsers((prev) =>
         prev.map((chat) =>
           chat.lastMessageId === messageId ? { ...chat, status: "Read" } : chat,
@@ -290,13 +331,6 @@ const Sidebar = ({
       );
     });
     socket.on("status:delivered", ({ messageId, conversationId }) => {
-      console.log(
-        "get delive in sidebar",
-        messageId,
-        "messgeId",
-        conversationId,
-        "mainId",
-      );
       setUsers((prev) =>
         prev.map((chat) =>
           chat.lastMessageId === messageId
@@ -325,13 +359,19 @@ const Sidebar = ({
     });
     socket.on(
       "receiveGropMessage",
-      ({ groupId, message, lastMessageId, file }) => {
-        console.log(
-          "new group message is receive",
-          message,
-          "message id is",
-          lastMessageId,
-        );
+      ({ groupId, message, lastMessageId, file, messageSenderId }) => {
+        const userMsgDetails = userMsgSeenRef.current;
+        const groupUserSeenDetail =
+          userMsgSeenRef.current[userMsgDetails.mainId];
+
+        const status =
+          !selectedUser ||
+          (Number(selectedUser?.mainId) !== Number(groupId?.split("-")[1]) &&
+            Number(messageSenderId) !== Number(logedInUser?.id) &&
+            Number(groupUserSeenDetail?.lastSeenMessageId) !==
+              Number(lastMessageId))
+            ? "Delivered"
+            : "Send";
         setUsers((prev) =>
           prev.map((group) =>
             String(group.id) === String(groupId)
@@ -339,8 +379,9 @@ const Sidebar = ({
                   ...group,
                   lastMessageId: lastMessageId,
                   lastMessage: message.trim() === "" ? "Send a file" : message,
-                  file: file.length > 0 ? file : null,
+                  file: file && file.length !== 0 ? file : null,
                   lastMessageCreatedAt: new Date(),
+                  status,
                 }
               : group,
           ),
@@ -358,31 +399,12 @@ const Sidebar = ({
         deleteType,
         status,
       }) => {
-        console.log("mainId", sidebarChatId, "last message,", lastMessage);
-        console.log(
-          "gated sidebar update signal for",
-          deleteType,
-          "type",
-          lastMessage,
-          sidebarChatId,
-          type,
-          lastMessageId,
-          lastMessageCreatedAt,
-          deleteType,
-          status,
-        );
         if (deleteType === "For_Everypone") {
           const users = usersRef.current;
-          console.log(users);
           const lastmessageList = users.find(
             (msg) => msg?.mainId === sidebarChatId,
           );
-          console.log(
-            "lastmessages list",
-            lastmessageList,
-            "and the messges deleted id is:",
-            lastMessageId,
-          );
+
           if (!lastmessageList) return;
         }
         setUsers((prev) =>
@@ -408,8 +430,7 @@ const Sidebar = ({
         );
       },
     );
-  }, [socket, logedInUser]);
-  // console.log(users);
+  }, [socket, logedInUser, selectedUser]);
   const sortedUsers = useMemo(() => {
     if (!users) return;
     return [...users].sort((a, b) => {
@@ -418,7 +439,27 @@ const Sidebar = ({
       );
     });
   }, [users]);
-  console.log(sortedUsers);
+  useEffect(() => {
+    if (!sortedUsers || !selectedUser) return;
+
+    const currentSelecetedUser = sortedUsers?.find(
+      (convo) =>
+        convo?.mainId === selectedUser?.mainId &&
+        convo?.messageSenderId !== logedInUser?.id,
+    );
+    if (
+      currentSelecetedUser?.status &&
+      currentSelecetedUser?.status === "Delivered"
+    ) {
+      setUsers((prev) =>
+        prev.map((user) =>
+          user?.mainId === currentSelecetedUser?.mainId
+            ? { ...user, status: "Read" }
+            : user,
+        ),
+      );
+    }
+  }, [selectedUser, sortedUsers, logedInUser]);
   const upadteProfileImage = async () => {
     try {
       setProfileLoading(true);
@@ -503,20 +544,17 @@ const Sidebar = ({
     };
   }, [socket, logedInUser]);
   const handleLogout = () => {
-    console.log("button clicked");
     setLoading(true);
 
     localStorage.removeItem("userData");
     setLoading(false);
-
-    navigate("/");
   };
-  // console.log(onlineUsers, "online users");
 
   const handleUserChatSelect = (userCoversation) => {
     setSelectedUser(userCoversation);
     setShowUserChat(true);
   };
+
   return (
     <div className="w-full bg-[#574CD6] text-white flex flex-col h-screen border-r border-white/10 shadow-2xl relative overflow-hidden">
       {/* create group section */}
@@ -730,21 +768,6 @@ const Sidebar = ({
             </div>
           </div>
           <div className="mt-10 w-full px-2 text-sm 3xl:text-lg flex flex-col items-center">
-            {/* <button
-              onClick={() => upadteProfileImage()}
-              disabled={!isChanged}
-              className={`w-[200px]  md:w-full px-8 md:px-0 ${
-                isChanged ? "bg-gray-100 hover:bg-gray-100" : "bg-gray-100/50"
-              }  text-[#574CD6] py-2 md:py-[6px] rounded-xl font-medium 2xl:font-bold  shadow-lg  active:scale-95 transition-all flex items-center justify-center gap-2`}
-            >
-              {loading ? (
-                <span className="animate-spin text-white font-bold">
-                  <CgSpinner />
-                </span>
-              ) : (
-                " Save Changes"
-              )}
-            </button> */}
             <SubmitButton
               type="button"
               onClick={() => upadteProfileImage()}
@@ -858,72 +881,112 @@ const Sidebar = ({
             <MdGroupAdd className="text-white/60 group-hover:text-white text-2xl" />
           </button>
         </div>
-        {/* ${["Send", "Delivered"].includes(userCoversation?.status) && userCoversation?.messageSenderId !== logedInUser?.id ? "bg-gray-50/30 shadow-2xl" : ""} */}
-        {(sortedUsers || []).map((userCoversation) => (
-          <div
-            key={userCoversation.id}
-            onClick={() => handleUserChatSelect(userCoversation)}
-            className={`  flex items-center gap-4 sm:gap-7 md:gap-3 p-2 lg:p-3 mb-1 rounded-2xl cursor-pointer user-item-transition group ${
-              selectedUser?.id === userCoversation?.id
-                ? "bg-white text-[#a69efa] shadow-lg"
-                : "hover:bg-white/10"
-            }`}
-          >
-            <div className="relative">
-              <Profile
-                getdefaultProfile={getdefaultProfile}
-                selectedUser={userCoversation}
-                className="border-none"
-              />
-              {onlineUsers.includes(String(userCoversation?.id)) && (
-                <div className="absolute bottom-0 right-0 w-[15px] h-[15px] rounded-full bg-green-500 flex items-center justify-center border-2 border-[#574CD6]">
-                  <FaCheck className="text-[8px] text-gray-900" />
-                </div>
-              )}
-            </div>
 
-            <div className=" flex-1 min-w-0">
-              <p
-                className={`sm:font-semibold truncate text-sm 2xl:text-base 3xl:text-xl ${
-                  selectedUser?.id === userCoversation?.id
-                    ? "text-[#574CD6]"
-                    : "text-white"
-                }`}
-              >
-                {userCoversation?.name}
-              </p>
-              <div className="flex gap-3 justify-between items-center text-xs xl:text-sm 3xl:text-lg 2xl:mt-2 3xl:mt-3">
-                <div
-                  className={`truncate ${
-                    selectedUser?.id === userCoversation?.id
-                      ? "text-[#574CD6]/80"
-                      : "text-white/50"
-                  }`}
-                >
-                  {typingUserId[`chat_${userCoversation?.id}`] &&
-                  userCoversation?.type === "chat" &&
-                  typingInfo[`chat_${userCoversation?.id}`]?.type === "chat" ? (
-                    "Typing..."
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      {userCoversation?.messageSenderId === logedInUser?.id && (
-                        <span>
-                          <MessageStatus status={userCoversation?.status} />
-                        </span>
-                      )}
-                      <p className="truncate">{userCoversation?.lastMessage}</p>
-                    </div>
-                  )}
-                </div>
-                {userCoversation?.lastMessageCreatedAt && (
-                  <p className="opacity-70 ml-2 shrink-0 text-xs 2xl:text-sm 3xl:text-lg">
-                    {getDate(userCoversation?.lastMessageCreatedAt)}
-                  </p>
+        {(sortedUsers || []).map((userCoversation) => {
+          // --- LOGIC VARIABLES (Do not change) ---
+          const isSelected = selectedUser?.mainId === userCoversation?.mainId;
+          const isUnread =
+            userCoversation?.status === "Delivered" &&
+            userCoversation?.messageSenderId !== logedInUser?.id &&
+            !isSelected;
+
+          const isOnline = onlineUsers.includes(String(userCoversation?.id));
+          const isTyping =
+            typingUserId[`chat_${userCoversation?.id}`] &&
+            userCoversation?.type === "chat" &&
+            typingInfo[`chat_${userCoversation?.id}`]?.type === "chat";
+
+          return (
+            <div
+              key={userCoversation.id}
+              onClick={() => handleUserChatSelect(userCoversation)}
+              className={`
+        flex items-center gap-4 sm:gap-7 md:gap-3 p-2 lg:p-3 mb-1 rounded-2xl cursor-pointer 
+        user-item-transition group relative overflow-hidden
+        ${
+          isSelected
+            ? "bg-white text-[#574CD6] shadow-lg"
+            : isUnread
+              ? "bg-[#ffffff0f]/5 hover:bg-[#ffffff1a]"
+              : "hover:bg-white/10"
+        }
+      `}
+            >
+              <div className="relative">
+                <Profile
+                  getdefaultProfile={getdefaultProfile}
+                  selectedUser={userCoversation}
+                  className={`border-none transition-transform duration-300 ${isUnread ? "scale-105" : ""}`}
+                />
+                {isOnline && (
+                  <div className="absolute bottom-0 right-0 w-[14px] h-[14px] rounded-full bg-green-500 border-2 border-[#574CD6] flex items-center justify-center">
+                    <FaCheck className="text-[7px] text-gray-900" />
+                  </div>
                 )}
               </div>
+
+              {/* Content Section */}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center">
+                  <p
+                    className={`truncate text-sm 2xl:text-base 3xl:text-xl transition-all ${
+                      isSelected
+                        ? "font-bold text-[#574CD6]"
+                        : isUnread
+                          ? "font-extrabold text-white"
+                          : "font-medium text-white/80"
+                    }`}
+                  >
+                    {userCoversation?.name}
+                  </p>
+
+                  {userCoversation?.lastMessageCreatedAt && (
+                    <p
+                      className={`shrink-0 text-[10px] 2xl:text-xs transition-colors ${
+                        isUnread ? "font-bold" : "opacity-50 text-white"
+                      }`}
+                    >
+                      {getDate(userCoversation?.lastMessageCreatedAt)}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2 justify-between items-center mt-0.5">
+                  <div className="truncate flex-1">
+                    {isTyping ? (
+                      <span className="text-[#a69efa] text-xs italic font-semibold animate-pulse">
+                        Typing...
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        {userCoversation?.type === "chat" &&
+                          userCoversation?.messageSenderId ===
+                            logedInUser?.id && (
+                            <MessageStatus status={userCoversation?.status} />
+                          )}
+                        <p
+                          className={`truncate text-xs xl:text-sm transition-all ${
+                            isSelected
+                              ? "text-[#574CD6]/70"
+                              : isUnread
+                                ? "text-white font-bold" // Teams style: Unread text is pure white and bold
+                                : "text-white/40 font-normal"
+                          }`}
+                        >
+                          {userCoversation?.lastMessage}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {isUnread && (
+                    <div className="h-2 w-2 rounded-full bg-[#a69efa] shadow-[0_0_10px_#a69efa] shrink-0" />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

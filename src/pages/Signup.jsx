@@ -41,11 +41,13 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
               toast.success(res.message);
               localStorage.setItem("userData", JSON.stringify(res.data));
               setIsOtpSend(true);
+              setLoading(false);
             }
           })
           .catch((error) => {
             console.log(error);
             toast.error(error.message);
+            setLoading(false);
           });
       },
     });
@@ -57,7 +59,9 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
         </h1>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">Name</label>
+            <label className="block text-gray-700 font-medium mb-1 text-sm md:text-base">
+              Name
+            </label>
             <input
               type="text"
               name="name"

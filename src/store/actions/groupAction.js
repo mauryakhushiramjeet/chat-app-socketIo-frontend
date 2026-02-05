@@ -9,8 +9,21 @@ export const createGroup = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
-           return rejectWithValue(error?.response?.data?.message||error?.message);
-
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
-  }
+  },
+);
+export const getUserSeenMsgDetaiils = createAsyncThunk(
+  "get/group",
+  async ({ groupId, userId }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get("/userLastMsgSeenDetail", {
+        params: { groupId, userId },
+      });
+      return response.data;
+    } catch (error) {
+      console.log("AXIOS ERROR:", error.response);
+      return rejectWithValue(error?.response?.data?.message || error?.message);
+    }
+  },
 );

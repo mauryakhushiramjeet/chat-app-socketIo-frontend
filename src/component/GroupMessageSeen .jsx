@@ -9,10 +9,10 @@ const GroupMessageSeen = ({
   currentUserId,
 }) => {
   if (type === "chat") return;
+  if (!messages || messages.lenth === 0) return;
   const lastMessage = messages[messages.length - 1];
   if (lastMessage?.sender?.id !== currentUserId || lastMessage?.deletedForAll)
     return;
-
   function getLastValidMessage(messages) {
     if (!messages || messages.length === 0) return false;
 
@@ -42,7 +42,7 @@ const GroupMessageSeen = ({
         member?.user?.id !== currentUserId &&
         member.lastSeenMessageId >= lastMessageId,
     ) || [];
-  if (seenMembers.length === 0) return null;
+  if (seenMembers && seenMembers.length === 0) return null;
 
   return (
     <div className="flex items-center justify-end gap-1.5 pr-1 relative">
