@@ -1218,17 +1218,23 @@ const ChatPage = () => {
                               }}
                             />
                           ) : (
-                            <div
-                              className={`p-1 xs:p-2 sm:p-3 2xl:p-4 relative group shadow-sm text-sm leading-relaxed max-w-[240px] xs:max-w-[300px] sm:max-w-[350px] lg:max-w-[500px] xl:max-w-[550px] 2xl:max-w-[700px]  flex w-fit  flex-col break-words ${
-                                isMe
-                                  ? `${
-                                      msg.text === null
-                                        ? "bg-[#574CD6]/80"
-                                        : "bg-[#574CD6]"
-                                    } text-white rounded-md sm:rounded-2xl rounded-tr-none`
-                                  : "bg-gray-200 text-gray-800 rounded-md sm:rounded-2xl rounded-tl-none border border-gray-100"
-                              }`}
-                            >
+                          <div
+  className={`p-1 xs:p-2 sm:p-3 2xl:p-4 relative group shadow-sm text-sm leading-relaxed 
+    max-w-[240px] xs:max-w-[300px] sm:max-w-[350px] lg:max-w-[500px] xl:max-w-[550px] 2xl:max-w-[700px] 
+    flex w-fit flex-col break-words 
+    ${
+      isMe
+        ? `${msg.text === null ? "bg-[#574CD6]/80" : "bg-[#574CD6]"} 
+           text-white rounded-2xl rounded-tr-none 
+           before:content-[''] before:absolute before:top-0 before:-right-2 
+           before:w-0 before:h-0 before:border-t-[10px] before:border-t-[#574CD6] 
+           before:border-r-[10px] before:border-r-transparent`
+        : "bg-gray-200 text-gray-800 rounded-2xl rounded-tl-none border border-gray-100 " +
+          "before:content-[''] before:absolute before:top-0 before:-left-2 " +
+          "before:w-0 before:h-0 before:border-t-[10px] before:border-t-gray-200 " +
+          "before:border-l-[10px] before:border-l-transparent"
+    }`}
+>
                               <div>
                                 <div
                                   className={`${isMe ? "hidden" : "block"} ${selectedUser?.type === "group" ? "block" : "hidden"} absolute top-[-20px] 2xl:top-[-25px] left-0 text-nowrap font-semibold text-xs md:text-sm 2xl:text-base text-indigo-600/80`}
