@@ -548,6 +548,7 @@ const Sidebar = ({
 
     localStorage.removeItem("userData");
     setLoading(false);
+    navigate("/");
   };
 
   const handleUserChatSelect = (userCoversation) => {
