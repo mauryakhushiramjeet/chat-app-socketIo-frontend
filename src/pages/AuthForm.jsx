@@ -7,9 +7,8 @@ import ForgotPasswordPage from "./ForgotPasswordPage";
 import ResetPasswordPage from "./ResetPasswordPage";
 
 const AuthForm = () => {
-  const [currentForm, setCurrentForm] = useState("login");
+  const [currentForm, setCurrentForm] = useState("signup");
   const [isOtpSend, setIsOtpSend] = useState(false);
-  console.log(currentForm);
   const renderForm = () => {
     switch (currentForm) {
       case "signup":

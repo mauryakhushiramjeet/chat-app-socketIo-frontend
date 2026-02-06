@@ -8,5 +8,4 @@ axiosInstance.interceptors.request.use(
   },
   (error) => Promise.reject(error),
 );
-console.log(process.env.REACT_APP_BACKEND_URL, "usrl");
 export default axiosInstance;

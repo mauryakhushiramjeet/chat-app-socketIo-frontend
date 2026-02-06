@@ -33,12 +33,10 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
 
   useEffect(() => {
     const loggedUserDetailes = JSON.parse(localStorage.getItem("userData"));
-    console.log(loggedUserDetailes);
     if (loggedUserDetailes?.email) {
       setEmail(loggedUserDetailes?.email);
     }
   }, []);
-  // console.log(email);
   const handleChange = (element, index) => {
     if (isNaN(element.value)) return false;
 
@@ -56,7 +54,19 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
       inputRefs.current[index - 1].focus();
     }
   };
+  const handlePast = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text");
+    const numbersOnly = pastedData.replace(/\D/g, "");
 
+    const otpSplit = numbersOnly.split("");
+    const newOtp = [...otp];
+    otpSplit.forEach((num, index) => {
+      newOtp[index] = num;
+      console.log(newOtp, index, num);
+    });
+    setOtp(newOtp);
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (timer === 0) {
@@ -122,7 +132,6 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
         });
     }
     if (currentForm === "forget-password") {
-      console.log("jkhdsjha,email", email);
       dispatch(resendMailForgetPassword(email))
         .unwrap()
         .then((res) => {
@@ -153,7 +162,7 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
       .padStart(2, "0")}`;
   };
   return (
-    <div className="min-h-screen flex items-center justify-center ">
+    <div className="min-h-screen flex items-center justify-center px-3">
       <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-6">
           <svg
@@ -183,20 +192,22 @@ const VerifyEmailPage = ({ currentForm, setCurrentForm, setIsOtpSend }) => {
 
         <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-6">
           <div className="flex justify-between gap-2">
-            {otp.map((data, index) => (
+            {(otp || []).map((data, index) => (
               <input
                 key={index}
                 type="text"
                 maxLength="1"
-                disabled={timer === 0} // Disable inputs if expired
+                // disabled={timer === 0} // Disable inputs if expired
                 ref={(el) => (inputRefs.current[index] = el)}
                 value={data}
                 onChange={(e) => handleChange(e.target, index)}
                 onKeyDown={(e) => handleKeyDown(e, index)}
+                onPaste={(e) => handlePast(e)}
                 className={`w-10 xs:w-12 md:w-12 h-12 sm:h-14 border-2 rounded-xl text-center text-xl font-bold outline-none transition-all ${
-                  timer === 0
-                    ? "bg-gray-100 border-gray-200 text-gray-400"
-                    : "text-indigo-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                  // timer === 0
+                  //   ? "bg-gray-100 border-gray-200 text-gray-400"
+                  //   :
+                  "text-indigo-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 }`}
               />
             ))}

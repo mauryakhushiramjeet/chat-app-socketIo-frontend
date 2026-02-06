@@ -79,7 +79,7 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
     });
 
   return (
-    <div className="min-h-screen flex items-center justify-center  p-2">
+    <div className="min-h-screen flex items-center justify-center  px-3">
       <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         {showEmailVerifyFeild ? (
           <div className="space-y-6">
@@ -145,7 +145,7 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
                   placeholder="petermiller@gmail.com"
                 />
                 {touched.email && errors.email && (
-                  <p className="text-red-600 text-xs mt-1">{errors.email}</p>
+                  <p className="text-red-600 text-sm mt-1">{errors.email}</p>
                 )}
               </div>
 
@@ -173,7 +173,7 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
                   </span>
                 </div>
                 {touched.password && errors.password && (
-                  <p className="text-red-600 text-xs mt-1">{errors.password}</p>
+                  <p className="text-red-600 text-sm mt-1">{errors.password}</p>
                 )}
               </div>
 
@@ -198,7 +198,7 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
               </div>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-3 xs:mt-6 text-center">
               <p className="text-gray-600 text-sm md:text-base">
                 Create new account?{" "}
                 <span

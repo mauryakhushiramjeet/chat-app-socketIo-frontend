@@ -15,8 +15,7 @@ const FilePreviewPage = ({ file, onClose }) => {
   };
 
   const handleDownload = async (file) => {
-    console.log(file);
-    console.log(file.fileName);
+
 
     const response = await fetch(file.filePath);
     const blob = await response.blob();
@@ -33,7 +32,6 @@ const FilePreviewPage = ({ file, onClose }) => {
     window.URL.revokeObjectURL(url);
   };
 
-  console.log(file?.filePath, "filepath");
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-white overflow-hidden">
       {/* 1. Header (OneDrive Style) */}

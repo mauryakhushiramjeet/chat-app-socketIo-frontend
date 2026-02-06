@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 // Import Swiper styles
@@ -17,6 +17,7 @@ const FilesView = ({ msg }) => {
   const [viewImage, setViewImage] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
   const swiperRef = useRef(null);
   const videoRefs = useRef({});
   const isFirstImage = currentIndex === 0;
@@ -44,7 +45,6 @@ const FilesView = ({ msg }) => {
   const mediaFiles = chatFiles?.filter(
     (f) => f.fileType?.startsWith("image/") || f.fileType?.startsWith("video/"),
   );
-  // console.log(chatFiles);
   const documentFiles = chatFiles.filter(
     (f) =>
       !f.fileType?.startsWith("image/") && !f.fileType?.startsWith("video/"),
@@ -53,6 +53,20 @@ const FilesView = ({ msg }) => {
   const handleFileClick = (file) => {
     setPreviewFile(file);
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 425) {
+        setIsMobileScreen(true);
+      } else {
+        setIsMobileScreen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
   return (
     <div className="flex flex-wrap gap-[6px] sm:gap-2">
       {viewImage !== null && (
@@ -60,19 +74,23 @@ const FilesView = ({ msg }) => {
           className="inset-0 bg-black/90 fixed z-[88] p-3 xs:p-[50px] flex flex-col gap-5 items-center justify-center"
           onClick={() => setViewImage(null)}
         >
-          <div
-            className={`${
+          {/* ${
               viewFiles?.length > 1 && window.innerWidth <= 425
                 ? "hidden"
                 : "block"
-            } flex h-fit  w-full items-center justify-center relative `}
+            } */}
+          <div
+            className={`${
+              viewFiles?.length > 1 && isMobileScreen ? "hidden" : "block"
+            } flex
+             h-fit  w-full items-center justify-center relative `}
           >
             <button
               // swiper-prev
               disabled={isFirstImage}
               className={`${
                 viewFiles?.length > 1 ? "block" : "hidden"
-              } swiper-prev absolute left-[-20px] sm:left-9 text-xl md:text-3xl p-2 md:p-3 rounded-full text-gray-100 hover:text-[#564BD4] ${
+              } swiper-prev absolute left-[-25px] md:left-9 text-xlxs:block  md:text-3xl p-2 md:p-3 rounded-full text-gray-100 hover:text-[#564BD4] ${
                 isFirstImage ? "cursor-default" : "cursor-pointer"
               }`}
               title="Previous"
@@ -80,7 +98,7 @@ const FilesView = ({ msg }) => {
             >
               <GrPrevious />
             </button>
-            <div className="w-full xs:w-[250px] md:w-[300px] lg:w-[400px] 3xl:w-[600px] h-[250px] lg:h-[300px] 3xl:h-[500px]">
+            <div className="w-full xs:w-[300px] sm:w-[400px] 3xl:w-[600px] h-[250px] sm:h-[300px] 3xl:h-[500px]">
               {" "}
               {viewImage?.fileType?.startsWith("image/") && (
                 <img
@@ -110,7 +128,7 @@ const FilesView = ({ msg }) => {
               disabled={isLastImage}
               className={`${
                 viewFiles?.length > 1 ? "block" : "hidden"
-              }  absolute right-[-20px] sm:right-9 text-xl md:text-3xl p-2 md:p-3 rounded-full text-gray-100 hover:text-[#564BD4] ${
+              }  absolute right-[-25px] md:right-9 text-xl md:text-3xl hidden xs:block p-2 md:p-3 rounded-full text-gray-100 hover:text-[#564BD4] ${
                 isLastImage ? "cursor-default" : "cursor-pointer"
               }`}
               title="Next"
@@ -169,7 +187,7 @@ const FilesView = ({ msg }) => {
                     />
                   )}
                   {file?.fileType?.startsWith("video/") && (
-                    <div className="w-full h-[250px] xs:h-[100px] lg:h-full relative">
+                    <div className="w-full h-[250px] xs:h-20 md:h-[100px] lg:h-full relative">
                       <video
                         key={file.id}
                         src={file.filePath}

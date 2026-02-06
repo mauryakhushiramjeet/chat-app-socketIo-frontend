@@ -1,5 +1,4 @@
 export const handleScrollOriganlMessage = (messageId, messageReplyRef) => {
-  console.log(messageId, messageReplyRef.current[messageId]);
   const scrollMessageEl = messageReplyRef.current[messageId];
   if (scrollMessageEl) {
     scrollMessageEl.scrollIntoView({ behaviour: "auto" });

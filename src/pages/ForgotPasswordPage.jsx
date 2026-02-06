@@ -20,15 +20,12 @@ const ForgotPasswordPage = ({ setIsOtpSend, setCurrentForm }) => {
       onSubmit: async (values) => {
         setLoading(true);
         const email = values.email;
-        console.log(email, "in forgt");
         dispatch(forgetPassword_EmailVerify(email))
           .unwrap()
           .then((res) => {
-            console.log(res);
             if (res.success) {
               toast.success(res.message);
               const userData = { email: email };
-              console.log(userData);
               localStorage.setItem("userData", JSON.stringify(userData));
               setLoading(false);
               setIsOtpSend(true);

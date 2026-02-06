@@ -29,20 +29,7 @@ const ChatOptions = ({
       setShowChatOptions(false);
       return;
     }
-    console.log("is it workin ");
 
-    console.log(
-      {
-        senderId: loggedUser?.id,
-        receiverId: selectedUser?.id,
-        type: selectedUser?.type,
-        groupId:
-          selectedUser?.type === "chat"
-            ? null
-            : Number(selectedUser.id.split("-")[1]),
-      },
-      "users id",
-    );
     socket.emit("clearChat", {
       senderId: loggedUser?.id,
       receiverId: selectedUser?.id,
@@ -81,7 +68,7 @@ const ChatOptions = ({
       </button>
 
       {/* You can easily add more options here later */}
-
+      {/* here also */}
       <button
         onClick={() => {
           setShowProfile(true);

@@ -4,7 +4,11 @@ const { url } = require("node:inspector");
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      content: {
+        empty: "''",
+      },
+    },
     fontFamily: {
       ibm: ["IBM Plex Sans", "sans-serif"],
       metro: ["Metrophobic", "sans-serif"],
@@ -20,8 +24,8 @@ module.exports = {
       xs: "425px",
     },
     backgroundImage: {
-  chatImg: "url('./assets/chat-back.png')",
-  chatImgForm: "url('./assets/chat-form-back.png')",
+      chatImg: "url('./assets/chat-back.png')",
+      chatImgForm: "url('./assets/chat-form-back.png')",
     },
   },
   plugins: [],

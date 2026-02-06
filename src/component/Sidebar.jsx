@@ -71,8 +71,7 @@ const Sidebar = ({
   const friends = useMemo(() => {
     return storeFriends?.user?.friends;
   }, [storeFriends]);
-
-  const getdefaultProfile = (name) => {
+   const getdefaultProfile = (name) => {
     if (!name) return "";
     const spiltName = name.split(" ");
     return spiltName.length > 1
@@ -130,7 +129,6 @@ const Sidebar = ({
     dispatch(createGroup(formData))
       .unwrap()
       .then((res) => {
-        // console.log(res);
         if (res.success) {
           toast.success(res.message);
           setLoading(false);
@@ -547,6 +545,7 @@ const Sidebar = ({
     setLoading(true);
 
     localStorage.removeItem("userData");
+    setShowProfile(false);
     setLoading(false);
     navigate("/");
   };
@@ -795,6 +794,7 @@ const Sidebar = ({
       </div>
 
       {/* --- SIDER HEADER --- */}
+      {/* here also */}
       <div
         onClick={() => setShowProfile(true)}
         className="px-3 sm:px-8 md:px-5 py-5 flex items-center gap-3 bg-[#4633A6]/40 border-b border-white/10 cursor-pointer hover:bg-[#4633A6]/60 transition-all group"

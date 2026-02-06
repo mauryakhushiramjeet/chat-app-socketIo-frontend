@@ -45,7 +45,6 @@ const EditMessageArea = ({
       setFile(editedMessage?.file);
     }
     if (editedMessage?.editText) {
-      console.log("run this for message", editedMessage?.editText);
       setNewEditedText(editedMessage?.editText);
     }
   }, [editedMessage]);
@@ -72,9 +71,7 @@ const EditMessageArea = ({
     setFile((prev) => [...prev, ...arrayFile]);
     setNewAddedFiles((prev) => [...prev, e.target?.files[0]]);
   };
-  console.log(editedMessage);
-  // console.log(deletedFileId);
-  console.log(deletedFileId);
+
   const sendEditMessage = () => {
     // socket.emit("editMessage", {
     //   messageId: editMessageId,
@@ -85,7 +82,6 @@ const EditMessageArea = ({
     //   file: file?.length > 0 ? file : null,
     // });
 
-    console.log(deletedFileId);
 
     const formData = new FormData();
     if (newEditedText.trim() === "" && file?.length === 0) {
@@ -99,30 +95,25 @@ const EditMessageArea = ({
     formData.append("receiverId", selectedUser?.id);
     const finalText =
       newEditedText !== "" ? newEditedText : editedMessage?.editText;
-    console.log(finalText, "final");
     formData.append("newText", finalText);
 
     for (let i = 0; i < deletedFileId?.length; i++) {
       formData.append("deletedFileId", deletedFileId[i]);
-      console.log("in loop", i, deletedFileId[i]);
     }
 
     formData.append("type", selectedUser?.type);
     if (selectedUser?.type === "group") {
       const groupId = Number(selectedUser.id.split("-")[1]);
-      console.log(groupId, "group id is");
       formData.append("groupId", groupId);
     }
     formData.append("fileExist", file.length !== 0 ? true : false);
     for (let i = 0; i < newAddedFiles.length; i++) {
       formData.append("file", newAddedFiles[i]);
     }
-    console.log(finalText, file, "check");
 
     dispatch(updateMessageFile(formData))
       .unwrap()
       .then((res) => {
-        // console.log(res, "resposne");
         if (res.success) {
           setLoading(false);
         }
@@ -131,8 +122,7 @@ const EditMessageArea = ({
         // console.log(error);
         setLoading(false);
       });
-    // setEditMessageId(null);
-    // setEditMessageId("");
+
   };
   useEffect(() => {
     if (fileErrorRef?.current) {

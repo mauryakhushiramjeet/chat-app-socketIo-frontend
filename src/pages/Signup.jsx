@@ -1,5 +1,5 @@
 // SignupPage.jsx
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { signupUser } from "../store/actions/userActions.js";
@@ -8,11 +8,13 @@ import { signupSchema } from "../utills/authSchema.js";
 import SubmitButton from "../component/SubmitButton.jsx";
 import { IoEye } from "react-icons/io5";
 import { IoEyeOff } from "react-icons/io5";
+import { MdPhotoCamera } from "react-icons/md";
+
 const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  const profileRef = useRef(null);
   const dispatch = useDispatch();
 
   const initialValues = {
@@ -36,7 +38,6 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
         dispatch(signupUser(formData))
           .unwrap()
           .then((res) => {
-            console.log(res);
             if (res.success) {
               toast.success(res.message);
               localStorage.setItem("userData", JSON.stringify(res.data));
@@ -52,7 +53,7 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
       },
     });
   return (
-    <div className="min-h-screen flex items-center justify-center ">
+    <div className="min-h-screen flex items-center justify-center px-3">
       <div className="bg-white shadow-xl rounded-2xl p-4 sm:p-6 md:p-7 w-full max-w-md">
         <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-center text-gray-800 mb-2 lg:mb-6">
           Create Account
@@ -105,7 +106,7 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
                 value={values.password}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30
+                className={`w-full px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[#4F46E5]/30
                                  
                                 `}
                 placeholder="........"
@@ -122,28 +123,50 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
             )}
           </div>
           <div>
-            {image ? (
-              <img
-                src={URL.createObjectURL(image)}
-                alt="profile"
-                className="h-[80px] w-[80px]"
+            <>
+              <input
+                ref={profileRef}
+                type="file"
+                role="button"
+                name="image"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setImage(e.target.files[0])}
               />
-            ) : (
-              <>
-                <input
-                  type="file"
-                  role="button"
-                  name="image"
-                  id="image"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => setImage(e.target.files[0])}
-                />
-                <label htmlFor="image" className="cursor-pointer">
-                  Choose profile image
-                </label>
-              </>
-            )}
+              <label className="block text-gray-700 font-medium text-sm md:text-base">
+                Choose profile image{" "}
+              </label>
+              {!image ? (
+                <div
+                  onClick={() => profileRef.current.click()}
+                  className={` rounded-xl mt-1 border border-dashed border-[#8981E2] px-4 py-2 cursor-pointer text-[#8981E2] flex flex-col items-center justify-center gap-1`}
+                >
+                  <span>
+                    <MdPhotoCamera />
+                  </span>
+                  <span className="text-sm md:text-base">
+                    Choose profile image
+                  </span>
+                </div>
+              ) : (
+                <div
+                  className={` rounded-xl mt-1 border border-dashed border-[#8981E2] px-4 py-2 cursor-pointer text-[#8981E2] flex  items-center justify-between gap-1`}
+                >
+                  <img
+                    src={URL.createObjectURL(image)}
+                    alt="profile"
+                    className="h-10 w-10 rounded-full"
+                  />
+
+                  <button
+                    onClick={() => profileRef?.current?.click()}
+                    className="px-4 py-1 xs:py-[6px] bg-[#8981E2] text-white rounded-lg text-sm md:text-base"
+                  >
+                    Change
+                  </button>
+                </div>
+              )}
+            </>
           </div>
 
           {/* <button

@@ -16,7 +16,6 @@ export const MessageStatus = ({ status }) => {
 };
 
 export const getGroupMemberName = ({ msg, groupMembers }) => {
-  // console.log("groupMembers", groupMembers, "messages", msg);
   const name = groupMembers?.find(
     (m) => Number(m?.user?.id) === Number(msg?.userId),
   );

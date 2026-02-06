@@ -34,6 +34,7 @@ import { getDateSeperator } from "../helper/getDateSeparator";
 import ChatOptions from "../component/ChatOptions";
 import GroupMessageSeen from "../component/GroupMessageSeen ";
 import { getGroupMemberName, MessageStatus } from "../helper/chatPageHelper";
+import PinPongNotification from "../component/PinPongNotification ";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -44,7 +45,6 @@ const ChatPage = () => {
   const [message, setMessage] = useState("");
   const [typingUserId, setTypingUserId] = useState({});
   const [typingInfo, setTypingInfo] = useState({});
-  // const [deleteMessageId, setDeleteMessageId] = useState(null);
   const [showImozi, setShowImozi] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [editMessageId, setEditMessageId] = useState(null);
@@ -53,7 +53,6 @@ const ChatPage = () => {
   const [privateMessages, setPrivateMessages] = useState([]);
   const [groupMessages, setGroupMessages] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
-  // const [lastSendMsgId, setLastSendMsgId] = useState();
   const [seenMembers, setSeenMberes] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [showChatOptions, setShowChatOptions] = useState(false);
@@ -253,7 +252,7 @@ const ChatPage = () => {
       "newMessage",
       ({ clientMessageId, response, files, replyMessage }) => {
         setSelectedFiles([]);
-       
+
         const currentSelectedUser = selectedUserRef.current;
         setPrivateMessages((prev) => {
           const updated = prev?.map((msg) =>
@@ -294,7 +293,6 @@ const ChatPage = () => {
               conversationId: selectedUser?.mainId,
             });
           } else {
-
             newSocket.emit("status:delivered", {
               messageId: response?.id,
               conversationId: selectedUser?.mainId,
@@ -321,7 +319,6 @@ const ChatPage = () => {
     newSocket.on(
       "message:deleted",
       ({ messageId, type, chatType, lastMessageCreatedAt }) => {
-       
         const curtrentSelectedUser = selectedUserRef.current;
         const currentDeletedMessageId = messageId;
         const currentMessages = messagesRef.current;
@@ -427,7 +424,7 @@ const ChatPage = () => {
       const groupId = Number(data?.groupId?.split("-")[1]);
       const inCommingGroupMsgId = currentSelectedUser?.mainId;
       const isMyGroupChatOpen = Number(inCommingGroupMsgId) === Number(groupId);
-     
+
       if (isMyMsg) return;
       if (!isMyGroupChatOpen) return;
       newSocket.emit("memeberLastMsgSeenUpdate", {
@@ -851,7 +848,6 @@ const ChatPage = () => {
     if (!messageEndRef.current || !chatTopRef.current) return;
     if (!messages?.length) return;
     const el = chatTopRef.current;
-    // if (isPagination) return;
     if (firstLoadRef.current) {
       setTimeout(() => {
         requestAnimationFrame(() => {
@@ -991,7 +987,7 @@ const ChatPage = () => {
       </div>
 
       {/* Chat Area - Clean white background with flex-column */}
-      <div className="flex-1 flex flex-col relative bg-chatImg bg-cover bg-center bg-no-repeatg ">
+      <div className="flex-1 flex flex-col relative bg-chatImg bg-cover bg-center bg-no-repeatg">
         {!selectedUser ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -1006,7 +1002,6 @@ const ChatPage = () => {
           </div>
         ) : (
           <>
-            {/* Chat Header - Glassmorphism style */}
             <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 ">
               <div className="flex items-center gap-4">
                 <button
@@ -1038,7 +1033,6 @@ const ChatPage = () => {
                     {selectedUser.name}
                   </div>
 
-                  {/* 2. Secondary Status Line */}
                   <div className="flex gap-1 items-center text-xs md:text-sm 2xl:text-sm 3xl:text-xl">
                     <div className="flex items-center gap-1.5 ">
                       {selectedUser.type === "group" && (
@@ -1108,16 +1102,14 @@ const ChatPage = () => {
                   selectedUser={selectedUser}
                   socket={socket}
                   messages={messages}
-                  // setShowProfile={setShowProfile}
                 />
               </div>
             </div>
-
-            {/* Messages Area - Subtle background color change */}
+            {/* chat sections */}
             <div
               ref={chatTopRef}
               onScroll={handleScroll}
-              className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto space-y-7"
+              className="flex-1 px-3 xl:px-6 py-4 overflow-y-auto space-y-7 relative"
             >
               {isChatLoading && <ChatMessageShimmer />}
               {(messages || []).map((msg, index) => {
@@ -1207,7 +1199,6 @@ const ChatPage = () => {
                             <EditMessageArea
                               editedMessage={editedMessage}
                               setEditedMessage={setEditedMesage}
-                              // setEditMessageId={setDeleteMessageId}
                               editMessageId={editMessageId}
                               logedInUser={logedInUser}
                               selectedUser={selectedUser}
@@ -1218,8 +1209,8 @@ const ChatPage = () => {
                               }}
                             />
                           ) : (
-                          <div
-  className={`p-1 xs:p-2 sm:p-3 2xl:p-4 relative group shadow-sm text-sm leading-relaxed 
+                            <div
+                              className={`p-1 xs:p-2 sm:p-3 2xl:p-4 relative group shadow-sm text-sm leading-relaxed 
     max-w-[240px] xs:max-w-[300px] sm:max-w-[350px] lg:max-w-[500px] xl:max-w-[550px] 2xl:max-w-[700px] 
     flex w-fit flex-col break-words 
     ${
@@ -1234,7 +1225,7 @@ const ChatPage = () => {
           "before:w-0 before:h-0 before:border-t-[10px] before:border-t-gray-200 " +
           "before:border-l-[10px] before:border-l-transparent"
     }`}
->
+                            >
                               <div>
                                 <div
                                   className={`${isMe ? "hidden" : "block"} ${selectedUser?.type === "group" ? "block" : "hidden"} absolute top-[-20px] 2xl:top-[-25px] left-0 text-nowrap font-semibold text-xs md:text-sm 2xl:text-base text-indigo-600/80`}
@@ -1269,8 +1260,6 @@ const ChatPage = () => {
                                   {isMe && (
                                     <button
                                       onClick={() => {
-                                        // setDeleteMessageId(msg?.id);
-                                        // deleteMessageIdRef.current = msg?.id;
                                         setIsModelOpen(msg?.id);
                                       }}
                                       className="p-1.5 text-gray-400 hover:text-red-500 rounded-md transition-colors"
@@ -1416,6 +1405,11 @@ const ChatPage = () => {
                 currentUserId={logedInUser?.id}
               />
               <div ref={messageEndRef} className=""></div>
+              <PinPongNotification
+                socket={socket}
+                selectedUser={selectedUser}
+                loggedUser={logedInUser}
+              />
             </div>
 
             {/* Input Wrapper - Clean Padding */}
