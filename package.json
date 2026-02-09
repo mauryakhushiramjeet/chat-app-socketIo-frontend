@@ -10,6 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.13.2",
     "emoji-picker-react": "^4.16.1",
+    "firebase": "^12.9.0",
     "formik": "^2.4.9",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",

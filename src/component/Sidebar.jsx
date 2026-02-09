@@ -22,6 +22,7 @@ import { ProfileContext } from "../utills/context/ProfileContext";
 import { MessageStatus } from "../helper/chatPageHelper";
 import { CgSpinner } from "react-icons/cg";
 import SubmitButton from "./SubmitButton";
+import SidebarPendingRequests from "./SidebarPendingRequests";
 
 const Sidebar = ({
   logedInUser,
@@ -71,7 +72,7 @@ const Sidebar = ({
   const friends = useMemo(() => {
     return storeFriends?.user?.friends;
   }, [storeFriends]);
-   const getdefaultProfile = (name) => {
+  const getdefaultProfile = (name) => {
     if (!name) return "";
     const spiltName = name.split(" ");
     return spiltName.length > 1
@@ -278,6 +279,7 @@ const Sidebar = ({
               String(item.id) === String(targetChatUserId) &&
               item.type === type,
           );
+
           if (conversationIndex !== -1) {
             const updatedUsers = [...prevUsers];
             updatedUsers[conversationIndex] = {
@@ -286,7 +288,7 @@ const Sidebar = ({
                 response.text.trim() === "" ? "Send a file" : response.text,
               lastMessageCreatedAt: new Date(),
               lastMessageId,
-
+              messageSenderId: response?.senderId,
               status:
                 (!selectedUser ||
                   selectedUser.id !== conversationId.chatUserId) &&
@@ -826,7 +828,7 @@ const Sidebar = ({
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Search conversations..."
-            className="w-full py-2 px-4 pr-10 rounded-xl bg-white/10 border border-white/10 placeholder:text-white/50 focus:outline-none focus:bg-white focus:text-gray-800  transition-all duration-300 "
+            className="w-full py-2 px-4 pr-10 rounded-xl bg-white/10 border border-white/10 placeholder:text-white/50  focus:outline-none focus:bg-white focus:text-gray-800  transition-all duration-300 "
           />
           <span className="absolute right-3 top-2.5 text-white/50 group-focus-within:text-gray-400">
             <GoSearch />
@@ -866,6 +868,11 @@ const Sidebar = ({
           </div>
         )}
       </div>
+      <SidebarPendingRequests
+        socket={socket}
+        logedInUser={logedInUser}
+        setUsers={setUsers}
+      />
 
       {/* {conversation loist} */}
       <div className="flex-1 overflow-y-auto sidebar-scroll px-3 sm:px-8 md:px-2 lg:px-3 pb-4">

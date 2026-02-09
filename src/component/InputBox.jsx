@@ -56,7 +56,7 @@ const InputBox = ({
     if (!textRef.current) return;
 
     if (message.trim() === "") {
-      textRef.current.style.height = "45px";
+      textRef.current.style.height = "35px";
       return;
     }
     textRef.current.style.height = "auto";
@@ -142,7 +142,7 @@ const InputBox = ({
             <TypingIndicator />
           </div>
         )}
-      <div className="flex gap-2 items-center w-full border">
+      <div className="flex gap-2 items-center w-full">
         <div
           className="relative  w-full rounded-xl border-[1px] bg-white border-gray-300 focus-within:border-b-2 2xl:focus-within:border-b-4 focus-within:border-b-[#786FDD]"
           onClick={() => textRef.current?.focus()}
@@ -285,12 +285,12 @@ const InputBox = ({
             placeholder="Type a message..."
             // rows={0.5}
             // cols={1}
-            className="flex-1 w-full text-sm 2xl:text-base 3xl:text-xl hide-scrollbar rounded-xl px-3 pt-3  resize-none focus:outline-none max-h-[200px] overflow-y-auto"
+            className="flex-1 w-full text-sm 2xl:text-base 3xl:text-xl hide-scrollbar rounded-xl px-3 pt-[6px]  resize-none focus:outline-none max-h-[200px] overflow-y-auto"
           />{" "}
-          <div className="flex gap-3 3xl:gap-5 px-3 pb-3 items-center justify-end w-full relative text-lg xl:text-xl 3xl:text-3xl">
+          <div className="flex gap-3 3xl:gap-5 px-3 pb-[6px] items-center justify-end w-full relative text-lg xl:text-xl 3xl:text-3xl">
             <div
               ref={imoziPickerRef}
-              className="absolute right-3 sm:right-[70px] bottom-[45px] x z-[11]"
+              className="absolute right-3 sm:right-[70px] bottom-[45px] z-[11px]"
               // style={{}}
             >
               <ImojiPiker

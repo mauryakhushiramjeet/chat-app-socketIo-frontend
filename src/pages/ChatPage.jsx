@@ -1405,11 +1405,11 @@ const ChatPage = () => {
                 currentUserId={logedInUser?.id}
               />
               <div ref={messageEndRef} className=""></div>
-              <PinPongNotification
+              {/* <PinPongNotification
                 socket={socket}
                 selectedUser={selectedUser}
                 loggedUser={logedInUser}
-              />
+              /> */}
             </div>
 
             {/* Input Wrapper - Clean Padding */}
