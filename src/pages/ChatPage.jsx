@@ -77,7 +77,6 @@ const ChatPage = () => {
   const messageEndRef = useRef(null);
   const chatTopRef = useRef(null);
   const firstLoadRef = useRef(true);
-  console.log(isChatLoading, "chat loading");
 
   useEffect(() => {
     if (!logedInUser) return;

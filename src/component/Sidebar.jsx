@@ -913,12 +913,12 @@ const Sidebar = ({
         {(sortedUsers || []).map((userCoversation) => {
           // --- LOGIC VARIABLES (Do not change) ---
           const isSelected = selectedUser?.id === userCoversation?.id;
-          console.log(
-            selectedUser,
-            "selected user",
-            userCoversation,
-            "conversation",
-          );
+          // console.log(
+          //   selectedUser,
+          //   "selected user",
+          //   userCoversation,
+          //   "conversation",
+          // );
           const isUnread =
             userCoversation?.status === "Delivered" &&
             userCoversation?.messageSenderId !== logedInUser?.id &&

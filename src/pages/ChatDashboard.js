@@ -19,13 +19,12 @@ const ChatDashboard = () => {
 
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
-      //   console.log("Notification permission granted.");
       const fcmToken = await getToken(messaging, {
         vapidKey: process.env.REACT_APP_FIREBASE_CLOUD_MESSAGE_TOKEN,
       });
 
       dispatch(saveFcmToken({ fcmToken, userId: loggedUserDetailes?.id }));
-      console.log(fcmToken);
+      // console.log(fcmToken);
     } else if (permission === "default") {
       alert("permission notification should appear");
     } else if (permission === "denied") {
