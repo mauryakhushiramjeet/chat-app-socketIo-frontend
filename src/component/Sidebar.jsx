@@ -912,7 +912,13 @@ const Sidebar = ({
 
         {(sortedUsers || []).map((userCoversation) => {
           // --- LOGIC VARIABLES (Do not change) ---
-          const isSelected = selectedUser?.mainId === userCoversation?.mainId;
+          const isSelected = selectedUser?.id === userCoversation?.id;
+          console.log(
+            selectedUser,
+            "selected user",
+            userCoversation,
+            "conversation",
+          );
           const isUnread =
             userCoversation?.status === "Delivered" &&
             userCoversation?.messageSenderId !== logedInUser?.id &&
@@ -970,8 +976,10 @@ const Sidebar = ({
 
                   {userCoversation?.lastMessageCreatedAt && (
                     <p
-                      className={`shrink-0 text-[10px] 2xl:text-xs transition-colors ${
-                        isUnread ? "font-bold" : "opacity-50 text-white"
+                      className={`shrink-0 text-[10px] 2xl:text-xs transition-colors  ${
+                        isUnread
+                          ? "font-bold"
+                          : `${isSelected ? "text-[#574CD6]/70" : "opacity-50 text-white"} `
                       }`}
                     >
                       {getDate(userCoversation?.lastMessageCreatedAt)}

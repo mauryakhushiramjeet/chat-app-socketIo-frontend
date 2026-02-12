@@ -77,6 +77,8 @@ const ChatPage = () => {
   const messageEndRef = useRef(null);
   const chatTopRef = useRef(null);
   const firstLoadRef = useRef(true);
+  console.log(isChatLoading, "chat loading");
+
   useEffect(() => {
     if (!logedInUser) return;
     const newSocket = io(process.env.REACT_APP_BACKEND_URL);
@@ -670,6 +672,10 @@ const ChatPage = () => {
   useEffect(() => {
     if (groupMessageStore?.isError || !groupMessageStore?.messages) return;
     setIsChatLoading(groupMessageStore?.isLoading);
+    if (groupMessageStore?.messages?.length === 0) {
+      setIsChatLoading(false);
+      return;
+    }
     if (groupMessageStore?.fisrtMessageId) {
       setFirstMessageId(groupMessageStore?.fisrtMessageId);
     }
@@ -757,10 +763,13 @@ const ChatPage = () => {
   };
   useEffect(() => {
     if (!messageStore) return;
-
-    if (messageStore?.messages?.length === 0) return;
     setIsChatLoading(messageStore?.isLoading);
 
+    if (messageStore?.messages?.length === 0) {
+      setIsChatLoading(false);
+      return;
+    }
+    console.log(messageStore?.isLoading, "see actual loading");
     if (messageStore?.fisrtMessageId) {
       setFirstMessageId(messageStore?.fisrtMessageId);
     }
@@ -773,6 +782,7 @@ const ChatPage = () => {
     }
     isFetchingOldRef.current = false;
     // setIsPagination(false);
+    console.log(messageStore, "store");
   }, [
     messageStore,
     messageStore?.messages,
@@ -1405,9 +1415,7 @@ const ChatPage = () => {
                 currentUserId={logedInUser?.id}
               />
               <div ref={messageEndRef} className=""></div>
-              <PinPongNotification
-               
-              />
+              <PinPongNotification />
             </div>
 
             {/* Input Wrapper - Clean Padding */}

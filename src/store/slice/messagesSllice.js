@@ -26,7 +26,7 @@ const getAllMessagesSlice = createSlice({
 
       .addCase(getAllMessages.rejected, (state, action) => {
         state.isError = true;
-        state.true = false;
+        state.isLoading = false;
       });
   },
 });

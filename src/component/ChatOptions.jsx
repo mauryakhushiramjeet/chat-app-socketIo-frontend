@@ -49,6 +49,7 @@ const ChatOptions = ({
     //       ? null
     //       : Number(selectedUser.id.split("-")[1]),
     // });
+    setShowChatOptions(false);
   };
   if (!open) return;
   return (
