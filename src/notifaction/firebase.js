@@ -1,14 +1,12 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging } from "firebase/messaging";
-
 const firebaseConfig = {
-  apiKey: "AIzaSyD89chWMuAV1Gzkp3eQsExwwhPwbySSdWI",
-  authDomain: "pingpong-notification.firebaseapp.com",
-  projectId: "pingpong-notification",
-  storageBucket: "pingpong-notification.firebasestorage.app",
-  messagingSenderId: "496629394406",
-  appId: "1:496629394406:web:e154394b98619ffd3c0427",
+  apiKey: process.env.REACT_APP_API_KEY,
+  authDomain: process.env.REACT_APP_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_API_ID,
 };
-
 export const app = initializeApp(firebaseConfig);
 export const messaging = getMessaging(app);

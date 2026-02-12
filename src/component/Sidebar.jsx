@@ -127,12 +127,28 @@ const Sidebar = ({
     formData.append("groupCreatedUserId", logedInUser?.id);
     setLoading(true);
 
-    dispatch(createGroup(formData))
+    dispatch(createGroup(formData)) ///
       .unwrap()
       .then((res) => {
         if (res.success) {
           toast.success(res.message);
           setLoading(false);
+          setShowGroupCreate(false);
+          setSearchingUser([]);
+          setGroupImage({ image: "", file: null });
+          setGroupName(null);
+          const { id, name, image } = res?.group;
+          setUsers((prev) => [
+            ...prev,
+            {
+              id: `group-${id}`,
+              type: "group",
+              name,
+              image,
+              lastMessage: "",
+              lastMessageCreatedAt: null,
+            },
+          ]);
         } else {
           toast.error(res.message);
           setLoading(false);
@@ -341,6 +357,7 @@ const Sidebar = ({
     });
 
     socket.on("groupCreate", ({ id, name, image, members }) => {
+      console.log("trigger create group");
       setUsers((prev) => [
         ...prev,
         {
@@ -352,10 +369,6 @@ const Sidebar = ({
           lastMessageCreatedAt: null,
         },
       ]);
-      setShowGroupCreate(false);
-      setSearchingUser([]);
-      setGroupImage({ image: "", file: null });
-      setGroupName(null);
     });
     socket.on(
       "receiveGropMessage",
@@ -488,6 +501,13 @@ const Sidebar = ({
       setProfileLoading(false);
     }
   };
+  useEffect(() => {
+    if (!socket) return;
+    socket.emit("chatId", {
+      userId: logedInUser?.id,
+      chatId: selectedUser?.mainId,
+    });
+  }, [socket, logedInUser, selectedUser]);
 
   const getDate = (date) => {
     const now = new Date(date);

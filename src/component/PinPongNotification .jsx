@@ -1,103 +1,106 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { IoClose, IoSend, IoHappyOutline } from "react-icons/io5";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { MdOutlineMessage } from "react-icons/md";
 import Profile from "./Profile";
 import { getdefaultProfile } from "../helper/filePre";
+import { NotificationContext } from "../utills/context/NotificationContext";
 
-const PinPongNotification = ({
-  initials = "GG",
-  socket,
-  selectedUser,
-  loggedUser,
-}) => {
+const PinPongNotification = () => {
   const [reply, setReply] = useState("");
-  const [showNotification, setShowNotification] = useState(false);
   const [ntfDetailes, setNtfDetailes] = useState({
     replyToMessageId: null,
     replyMessageSenderId: null,
   });
   const [isHovered, setIsHovered] = useState(false);
+  const {
+    showNotification,
+    setShowNotification,
+    notificationData,
+    setNotificationData,
+  } = useContext(NotificationContext);
 
-  const [notificationUserDetailes, setNotificationUserDetailes] = useState({
-    name: "",
-    message: "",
-    image: "",
-    type: "",
-    groupName: null,
-  });
   const notificationTimeOut = useRef(null);
   const handleSend = (e) => {
     e.preventDefault();
     console.log("Reply sent:", reply);
     setReply("");
   };
-  useEffect(() => {
-    socket.on(
-      "receiveNotification",
-      ({
-        senderId,
-        senderName,
-        senderImage,
-        message,
-        chatType,
-        messageId,
-        groupId,
-        groupName,
-      }) => {
-        // console.log(
-        //   "sender id",
-        //   senderId,
-        //   "sender name",
-        //   senderName,
-        //   "image",
-        //   senderImage,
-        //   "MESSAGE",
-        //   message,
-        //   "TYPE",
-        //   chatType,
-        //   "messageiD",
-        //   messageId,
-        //   "g id",
-        //   groupId,
-        //   "groupManme",
-        //   groupName,
-        // );
+  // useEffect(() => {
+  //   socket.on(
+  //     "receiveNotification",
+  //     ({
+  //       senderId,
+  //       senderName,
+  //       senderImage,
+  //       message,
+  //       chatType,
+  //       messageId,
+  //       groupId,
+  //       groupName,
+  //     }) => {
+  //       // console.log(
+  //       //   "sender id",
+  //       //   senderId,
+  //       //   "sender name",
+  //       //   senderName,
+  //       //   "image",
+  //       //   senderImage,
+  //       //   "MESSAGE",
+  //       //   message,
+  //       //   "TYPE",
+  //       //   chatType,
+  //       //   "messageiD",
+  //       //   messageId,
+  //       //   "g id",
+  //       //   groupId,
+  //       //   "groupManme",
+  //       //   groupName,
+  //       // );
 
-        const activeChatUserId =
-          chatType === "group"
-            ? (!selectedUser || Number(selectedUser?.mainId)) ===
-              Number(groupId)
-            : (!selectedUser || Number(selectedUser?.id)) === Number(senderId);
-        console.log(activeChatUserId, "is chat is open");
-        if (activeChatUserId) return;
-        setNotificationUserDetailes({
-          name: senderName,
-          message: message,
-          image: senderImage,
-          type: chatType,
-          groupName: chatType === "group" ? groupName : null,
-        });
-        setNtfDetailes({
-          replyMessageSenderId: senderId,
-          replyToMessageId: messageId,
-        });
+  //       const activeChatUserId =
+  //         chatType === "group"
+  //           ? (!selectedUser || Number(selectedUser?.mainId)) ===
+  //             Number(groupId)
+  //           : (!selectedUser || Number(selectedUser?.id)) === Number(senderId);
+  //       console.log(activeChatUserId, "is chat is open");
+  //       if (activeChatUserId) return;
+  //       setNotificationUserDetailes({
+  //         name: senderName,
+  //         message: message,
+  //         image: senderImage,
+  //         type: chatType,
+  //         groupName: chatType === "group" ? groupName : null,
+  //       });
+  //       setNtfDetailes({
+  //         replyMessageSenderId: senderId,
+  //         replyToMessageId: messageId,
+  //       });
 
-        setShowNotification(true);
-      },
-    );
-  }, [socket, selectedUser, loggedUser]);
+  //       setShowNotification(true);
+  //     },
+  //   );
+  // }, [socket, selectedUser, loggedUser]);
   useEffect(() => {
     if (!showNotification) return;
 
     if (isHovered) {
       clearTimeout(notificationTimeOut?.current);
+      console.log("clerrrrr");
       return;
     }
     notificationTimeOut.current = setTimeout(() => {
       setShowNotification(false);
+      setNotificationData({
+        name: "",
+        message: "",
+        image: "",
+        type: "",
+        groupName: null,
+      });
+      console.log("close");
     }, 3000);
-  }, [showNotification, isHovered]);
+  }, [showNotification, notificationData, isHovered]);
   return (
     <div
       onMouseEnter={() => setIsHovered(true)}
@@ -131,30 +134,28 @@ const PinPongNotification = ({
       <div className="p-4 flex items-start gap-4">
         <Profile
           getdefaultProfile={getdefaultProfile}
-          selectedUser={notificationUserDetailes}
+          selectedUser={notificationData}
         />
-        {notificationUserDetailes?.type === "group" ? (
+        {notificationData?.type === "group" ? (
           <div className="flex-1 min-w-0 pt-1">
             <h4 className="font-bold text-[15px] leading-tight truncate">
-              {notificationUserDetailes?.groupName}{" "}
+              {notificationData?.groupName}{" "}
             </h4>
             <p className="text-sm opacity-90 mt-1 line-clamp-2 leading-snug">
-              <span className="font-medium">
-                {notificationUserDetailes?.name} :{" "}
-              </span>
+              <span className="font-medium">{notificationData?.name} : </span>
               <span className="text-gray-300">
                 {" "}
-                {notificationUserDetailes?.message}
+                {notificationData?.message}
               </span>
             </p>
           </div>
         ) : (
           <div className="flex-1 min-w-0 pt-1">
             <h4 className="font-bold text-[15px] leading-tight truncate">
-              {notificationUserDetailes?.name}{" "}
+              {notificationData?.name}{" "}
             </h4>
             <p className="text-sm opacity-90 mt-1 line-clamp-2 leading-snug text-gray-300">
-              {notificationUserDetailes?.message}
+              {notificationData?.message}
             </p>
           </div>
         )}
