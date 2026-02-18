@@ -8,9 +8,9 @@ import { ImAttachment } from "react-icons/im";
 import { LuSmilePlus } from "react-icons/lu";
 import Picker from "emoji-picker-react";
 import { useDispatch } from "react-redux";
-import { updateMessageFile } from "../store/actions/messageActions";
 import { LuSendHorizontal } from "react-icons/lu";
 import { LuLoaderCircle } from "react-icons/lu";
+import { updateMessageFile } from "../../store/actions/messageActions";
 
 const EditMessageArea = ({
   editedMessage,

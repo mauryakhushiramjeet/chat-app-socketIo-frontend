@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GoSearch } from "react-icons/go";
-import { updateProfileThunk } from "../store/actions/userActions";
+import { updateProfileThunk } from "../../store/actions/userActions";
 import {
   FaCheck,
   FaCamera,
@@ -15,14 +15,13 @@ import { useNavigate } from "react-router-dom";
 import {
   createGroup,
   getUserSeenMsgDetaiils,
-} from "../store/actions/groupAction";
-import { getSidebarChatList } from "../store/actions/sidebarChatListActions";
+} from "../../store/actions/groupAction";
+import { getSidebarChatList } from "../../store/actions/sidebarChatListActions";
 import Profile from "./Profile";
-import { ProfileContext } from "../utills/context/ProfileContext";
-import { MessageStatus } from "../helper/chatPageHelper";
-import { CgSpinner } from "react-icons/cg";
-import SubmitButton from "./SubmitButton";
-import SidebarPendingRequests from "./SidebarPendingRequests";
+import { ProfileContext } from "../../utills/context/ProfileContext";
+import { MessageStatus } from "../../helper/chatPageHelper";
+import SubmitButton from "../SubmitButton";
+import SidebarPendingRequests from "../sidebarComponent/SidebarPendingRequests";
 
 const Sidebar = ({
   logedInUser,
@@ -45,7 +44,8 @@ const Sidebar = ({
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [userMsgSeenDetails, setUserMsgSeenDetails] = useState({});
   const [groupImage, setGroupImage] = useState({ image: "", file: null });
-  const { showProfile, setShowProfile } = useContext(ProfileContext);
+  const { showProfile, setShowProfile, setViewProfileImage } =
+    useContext(ProfileContext);
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [initialProfile, setInitialProfile] = useState({
@@ -714,32 +714,46 @@ const Sidebar = ({
           <p className="3xl:font-bold">Profile</p>
         </div>
 
-        <div className="p-3 sm:p-8 md:p-4 lg:p-8 flex flex-col items-center">
-          <div
-            className="relative group cursor-pointer"
-            onClick={handleImageClick}
-          >
-            <div className="w-28 xl:w-32 2xl:w-40 h-28 xl:h-32 2xl:h-40 rounded-full border-4 border-white/20 overflow-hidden shadow-2xl">
-              {profile?.image ? (
-                <img
-                  src={profile?.image}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-white flex items-center justify-center">
-                  <span className="text-[#574CD6] text-4xl 2xl:text-5xl font-black">
-                    {getdefaultProfile(logedInUser?.name)}
-                  </span>
-                </div>
-              )}
+        <div className="p-3 sm:p-8 md:p-4 lg:p-8 flex flex-col items-center ">
+          <div className="flex flex-col items-center">
+            {" "}
+            <div
+              className="relative group cursor-pointer"
+              onClick={handleImageClick}
+            >
+              <div className="w-28 xl:w-32 2xl:w-40 h-28 xl:h-32 2xl:h-40 rounded-full border-4 border-white/20 overflow-hidden shadow-2xl">
+                {profile?.image ? (
+                  <img
+                    src={profile?.image}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-white flex items-center justify-center">
+                    <span className="text-[#574CD6] text-4xl 2xl:text-5xl font-black">
+                      {getdefaultProfile(logedInUser?.name)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <FaCamera className="text-white text-3xl mb-1" />
+                <span className="text-[10px] 2xl:text-base uppercase font-bold text-white">
+                  Change Photo
+                </span>
+              </div>
             </div>
-            <div className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <FaCamera className="text-white text-3xl mb-1" />
-              <span className="text-[10px] 2xl:text-base uppercase font-bold text-white">
-                Change Photo
-              </span>
-            </div>
+            {profile?.image && profile?.image?.trim() !== "" && (
+              <p
+                onClick={() => {
+                  setViewProfileImage(profile?.image);
+                  console.log(profile?.image);
+                }}
+                className="text-sm hover:underline cursor-pointer pt-1 text-gray-200"
+              >
+                View image
+              </p>
+            )}
           </div>
 
           <input

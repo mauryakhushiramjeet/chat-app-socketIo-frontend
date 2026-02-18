@@ -1,3 +1,2 @@
 # Service worker files - they run in a special browser context
 public/firebase-messaging-sw.js
-public/service-worker.js

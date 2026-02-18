@@ -7,9 +7,10 @@ const Profile = ({ getdefaultProfile, selectedUser, className }) => {
       {selectedUser?.image && selectedUser.image.trim() !== "" ? (
         // <div className="w-[60px] h-[60px]">
         <img
+          title="View Profile"
           src={selectedUser.image}
           alt="User"
-          className={`h-full w-full rounded-full object-cover ring-2 ring-gray-50  ${className}`}
+          className={`h-full w-full rounded-full object-cover ring-2 ring-gray-50 cursor-pointer ${className}`}
         />
       ) : (
         // </div>

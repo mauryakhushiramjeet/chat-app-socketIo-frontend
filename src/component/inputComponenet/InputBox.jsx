@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import TypingIndicator from "../component/TypingIndicator";
+import TypingIndicator from "./TypingIndicator";
 import { LuSmilePlus } from "react-icons/lu";
 import { ImAttachment } from "react-icons/im";
 import { FiImage } from "react-icons/fi";
@@ -9,10 +9,10 @@ import { AiOutlineFile } from "react-icons/ai";
 import { SlPicture } from "react-icons/sl";
 import { RxCross1 } from "react-icons/rx";
 import { LuLoaderCircle } from "react-icons/lu";
-import { getdefaultProfile } from "../helper/filePre";
-import { getDate } from "../helper/getDate";
+import { getdefaultProfile } from "../../helper/filePre";
+import { getDate } from "../../helper/getDate";
 import ImojiPiker from "./ImojiPiker";
-import { getGroupMemberName } from "../helper/chatPageHelper";
+import { getGroupMemberName } from "../../helper/chatPageHelper";
 
 const InputBox = ({
   typingUserId,

@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { IoClose, IoSend, IoHappyOutline } from "react-icons/io5";
 import { HiDotsHorizontal } from "react-icons/hi";
 import { MdOutlineMessage } from "react-icons/md";
-import Profile from "./Profile";
+import Profile from "./sidebarComponent/Profile";
 import { getdefaultProfile } from "../helper/filePre";
 import { NotificationContext } from "../utills/context/NotificationContext";
 

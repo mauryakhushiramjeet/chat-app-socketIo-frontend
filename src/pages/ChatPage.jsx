@@ -16,25 +16,26 @@ import {
   sendGroupMessage,
   updateMembersLastMsgSeenId,
 } from "../store/actions/messageActions";
-import Sidebar from "../component/Sidebar";
+import Sidebar from "../component/sidebarComponent/Sidebar";
 import { LuSmilePlus } from "react-icons/lu";
 import { HiOutlinePencil, HiOutlineDotsHorizontal } from "react-icons/hi";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { HiArrowUturnLeft } from "react-icons/hi2";
 import { FaArrowLeft } from "react-icons/fa";
-import DeleteModel from "../component/DeleteModel";
-import InputBox from "../component/InputBox";
-import EditMessageArea from "../component/EditMessageArea ";
-import FilesView from "../component/FilesView";
-import Profile from "../component/Profile";
+import DeleteModel from "../component/chatComponent/DeleteModel";
+import InputBox from "../component/inputComponenet/InputBox";
+import EditMessageArea from "../component/chatComponent/EditMessageArea ";
+import FilesView from "../component/chatComponent/FilesView";
+import Profile from "../component/sidebarComponent/Profile";
 import { getdefaultProfile } from "../helper/filePre";
 import { handleScrollOriganlMessage } from "../helper/handleScrollOriganlMessage";
-import ChatMessageShimmer from "../component/ChatMessageShimmer ";
+import ChatMessageShimmer from "../component/chatComponent/ChatMessageShimmer ";
 import { getDateSeperator } from "../helper/getDateSeparator";
-import ChatOptions from "../component/ChatOptions";
-import GroupMessageSeen from "../component/GroupMessageSeen ";
+import ChatOptions from "../component/chatComponent/ChatOptions";
+import GroupMessageSeen from "../component/groupComponent/GroupMessageSeen ";
 import { getGroupMemberName, MessageStatus } from "../helper/chatPageHelper";
 import PinPongNotification from "../component/PinPongNotification ";
+import ProfileImageViewModel from "../component/sidebarComponent/ProfileImageViewModel";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -977,6 +978,7 @@ const ChatPage = () => {
   return (
     <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden font-nunito relative">
       {/* Sidebar - Added a subtle border-right */}
+      <ProfileImageViewModel />
       <div
         className={`${
           showUserChat && window.innerWidth <= 768 ? "hidden" : "block"

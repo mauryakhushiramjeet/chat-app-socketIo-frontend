@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useRef } from "react";
 import { RiDeleteBinLine } from "react-icons/ri";
 import { RiUserLine } from "react-icons/ri";
-import { ProfileContext } from "../utills/context/ProfileContext";
 import { MdBlock } from "react-icons/md";
+import { ProfileContext } from "../../utills/context/ProfileContext";
 
 const ChatOptions = ({
   open,

@@ -1,15 +1,12 @@
 import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ChatPage from "./pages/ChatPage";
 import { ToastContainer } from "react-toastify";
 import PrivateRoute from "./routes/PrivateRoute";
 import PublicRoute from "./routes/PublicRoute";
 import AuthForm from "./pages/AuthForm";
-import { getToken } from "firebase/messaging";
-import { messaging } from "./notifaction/firebase";
+
 import ChatDashboard from "./pages/ChatDashboard";
 const App = () => {
-
   return (
     <BrowserRouter>
       <Routes>

@@ -10,7 +10,7 @@ import { AiOutlineFile } from "react-icons/ai";
 import { FaPlayCircle } from "react-icons/fa";
 import { GrNext } from "react-icons/gr";
 import { GrPrevious } from "react-icons/gr";
-import FilePreviewPage from "./FilePreviewPage";
+import FilePreviewPage from "../chatComponent/FilePreviewPage";
 
 const FilesView = ({ msg }) => {
   const [viewFiles, setViewFiles] = useState([]);

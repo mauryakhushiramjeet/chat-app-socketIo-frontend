@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import {
-  acceptChatRequest,
-  getPendingReuests,
-} from "../store/actions/sidebarRequestActions";
+
 import { FaUserPlus, FaCheck, FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { acceptChatRequest, getPendingReuests } from "../../store/actions/sidebarRequestActions";
 // Assuming you have an accept action, if not, create one
 // import { acceptChatRequest } from "../store/actions/sidebarRequestActions";
 

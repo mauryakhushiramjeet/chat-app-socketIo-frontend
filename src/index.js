@@ -8,11 +8,10 @@ import store from "./store/store";
 import { ProfileContextProvider } from "./utills/context/ProfileContext";
 import { NotificationContextProvider } from "./utills/context/NotificationContext";
 
-// Register Firebase Cloud Messaging service worker
 if ("serviceWorker" in navigator) {
-  // Register the custom service worker for Firebase messaging
   navigator.serviceWorker
     .register("/firebase-messaging-sw.js")
+
     .then((registration) => {
       console.log(
         "Firebase messaging service worker registered successfully:",
