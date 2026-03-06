@@ -5,9 +5,12 @@ import { useDispatch } from "react-redux";
 import { saveFcmToken } from "../store/actions/notificationActions";
 import { messaging } from "../notifaction/firebase";
 import { NotificationContext } from "../utills/context/NotificationContext";
+import { getAllBlockedUsers } from "../store/actions/blockActions";
 
 const ChatDashboard = () => {
   const dispatch = useDispatch();
+  const { setFcmTokens, fcmToken, setBlockedUsers } =
+    useContext(NotificationContext);
   const {
     showNotification,
     setShowNotification,
@@ -23,6 +26,8 @@ const ChatDashboard = () => {
         vapidKey: process.env.REACT_APP_FIREBASE_CLOUD_MESSAGE_TOKEN,
       });
 
+      setFcmTokens(fcmToken);
+      // console.log(fcmToken, "fcm token");
       dispatch(saveFcmToken({ fcmToken, userId: loggedUserDetailes?.id }));
       // console.log(fcmToken);
     } else if (permission === "default") {
@@ -63,6 +68,16 @@ const ChatDashboard = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    dispatch(getAllBlockedUsers())
+      .unwrap()
+      .then((res) => {
+        if (res.success) {
+          setBlockedUsers(res?.blocked_Users);
+        }
+      })
+      .catch((err) => console.log(err));
+  }, []);
   return <ChatPage />;
 };
 

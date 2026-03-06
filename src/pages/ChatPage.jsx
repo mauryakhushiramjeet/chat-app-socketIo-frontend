@@ -4,6 +4,7 @@ import React, {
   useRef,
   useMemo,
   useLayoutEffect,
+  useContext,
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getAllFriends } from "../store/actions/userActions";
@@ -34,8 +35,11 @@ import { getDateSeperator } from "../helper/getDateSeparator";
 import ChatOptions from "../component/chatComponent/ChatOptions";
 import GroupMessageSeen from "../component/groupComponent/GroupMessageSeen ";
 import { getGroupMemberName, MessageStatus } from "../helper/chatPageHelper";
-import PinPongNotification from "../component/PinPongNotification ";
+import { MdKeyboardArrowDown } from "react-icons/md";
+
 import ProfileImageViewModel from "../component/sidebarComponent/ProfileImageViewModel";
+import { NotificationContext } from "../utills/context/NotificationContext";
+import UnblockModal from "../component/chatComponent/UnblockModal";
 
 const ChatPage = () => {
   // --- ALL LOGIC KEPT EXACTLY THE SAME ---
@@ -62,6 +66,8 @@ const ChatPage = () => {
   const [replyTomessage, setReplyToMessage] = useState(null);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [firstMessageId, setFirstMessageId] = useState(null);
+  const [scrollToBottom, setScrollToBottom] = useState(false);
+  const [openUnblockModel, setOpenUnblockModel] = useState(false);
   // const [isPagination, setIsPagination] = useState(false);
   const selectedUserRef = React.useRef(null);
   const onlineUserRef = React.useRef(null);
@@ -73,9 +79,10 @@ const ChatPage = () => {
 
   const dispatch = useDispatch();
   const messageStore = useSelector((store) => store.messages);
+  const { blockedUsers } = useContext(NotificationContext);
   const receiverMessageStore = useSelector((store) => store.getMyMessages);
   const groupMessageStore = useSelector((store) => store.groupMessages);
-  const messageEndRef = useRef(null);
+  const chatBottomRef = useRef(null);
   const chatTopRef = useRef(null);
   const firstLoadRef = useRef(true);
 
@@ -585,7 +592,14 @@ const ChatPage = () => {
     if (selectedFiles?.length !== 0) {
       setLoading(true);
     }
-
+    const isUserBlockd = blockedUsers.find(
+      (user) => user.blocked_user_id === selectedUser?.id,
+    );
+    if (isUserBlockd) {
+      setOpenUnblockModel(true);
+      setMessage("");
+      return;
+    }
     if (selectedUser?.type === "group") {
       const id = selectedUser?.id;
       const groupId = id.split("-")[1];
@@ -643,15 +657,6 @@ const ChatPage = () => {
       setMessage("");
       setReplyToMessage(null);
     }
-    // socket.emit("stopTyping", {
-    //   senderId: logedInUser?.id,
-    //   receiverId: selectedUser?.id,
-    //   type: selectedUser?.type,
-    //   groupId:
-    //     selectedUser?.type === "group"
-    //       ? Number(selectedUser?.id?.split("-")[1])
-    //       : null,
-    // });
   };
 
   useEffect(() => {
@@ -844,6 +849,17 @@ const ChatPage = () => {
     if (isFetchingOldRef.current) return;
     if (!messages?.length) return;
 
+    if (chatBottomRef.current) {
+      const rect = chatBottomRef.current.getBoundingClientRect();
+      console.log(rect.top, window.innerHeight);
+      if (rect.top > window.innerHeight) {
+        setScrollToBottom(true);
+        console.log("bottom is below screen");
+      } else {
+        setScrollToBottom(false);
+        console.log("bottom is visible");
+      }
+    }
     const el = chatTopRef.current;
     const atTop = el.scrollTop <= 20;
     if (!atTop) return;
@@ -855,14 +871,14 @@ const ChatPage = () => {
   };
 
   useEffect(() => {
-    if (!messageEndRef.current || !chatTopRef.current) return;
+    if (!chatBottomRef.current || !chatTopRef.current) return;
     if (!messages?.length) return;
     const el = chatTopRef.current;
     if (firstLoadRef.current) {
       setTimeout(() => {
         requestAnimationFrame(() => {
-          if (messageEndRef.current && chatTopRef.current) {
-            messageEndRef.current.scrollIntoView({ behavior: "auto" });
+          if (chatBottomRef.current && chatTopRef.current) {
+            chatBottomRef.current.scrollIntoView({ behavior: "auto" });
           }
         }, 0);
       });
@@ -872,7 +888,7 @@ const ChatPage = () => {
 
     const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
     if (isAtBottom) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+      chatBottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
@@ -1221,7 +1237,7 @@ const ChatPage = () => {
                             />
                           ) : (
                             <div
-                              className={`p-1 xs:p-2 sm:p-3 2xl:p-4 relative group shadow-sm text-sm leading-relaxed 
+                              className={`p-2 xs:p-3 2xl:p-4 relative group shadow-sm text-sm leading-relaxed 
     max-w-[240px] xs:max-w-[300px] sm:max-w-[350px] lg:max-w-[500px] xl:max-w-[550px] 2xl:max-w-[700px] 
     flex w-fit flex-col break-words 
     ${
@@ -1415,11 +1431,38 @@ const ChatPage = () => {
                 type={selectedUser?.type}
                 currentUserId={logedInUser?.id}
               />
-              <div ref={messageEndRef} className=""></div>
-              <PinPongNotification />
+              {/* <div className="w-full relative">  */}
+              <button
+                onClick={() => {
+                  if (chatBottomRef.current) {
+                    chatBottomRef.current.scrollIntoView({
+                      behavior: "auto",
+                    });
+                  }
+                }}
+                className={`${scrollToBottom ? "opacity-100" : "opacity-0"} transition-all duration-300 z-10 rounded-lg  bg-gray-100 border border-gray-500 shadow-2xl shado w-[#574CD6] bottom-28 text-[#574CD6] cursor-pointer fixed right-5`}
+              >
+                <span className="text-2xl sm:text-3xl">
+                  <MdKeyboardArrowDown />
+                </span>
+              </button>
+              {blockedUsers.find(
+                (b) => b?.blocked_user_id === selectedUser?.id,
+              ) && (
+                <div className="w-full flex flex-col justify-center gap-1 text-center text-xs md:text-sm text-gray-600 2xl:text-lg 3xl:text-[22px] mt-0 bg-gray-100">
+                  <p className="">
+                    You block{" "}
+                    <span className="text-indigo-900">
+                      {selectedUser?.name}
+                    </span>
+                  </p>
+                  <p>Unblock to send messages</p>
+                </div>
+              )}
+              {/* </div> */}
+              <div ref={chatBottomRef} className=""></div>
             </div>
 
-            {/* Input Wrapper - Clean Padding */}
             <div className="px-3 xl:px-6 py-4">
               <InputBox
                 typingUserId={typingUserId}
@@ -1450,6 +1493,14 @@ const ChatPage = () => {
         onDeleteForEveryone={handleDeleteFoEveryOne}
         isModelOpen={isModelOpen}
         setIsModelOpen={setIsModelOpen}
+      />
+      <UnblockModal
+        openUnblockModel={openUnblockModel}
+        setOpenUnblockModel={setOpenUnblockModel}
+        userName={selectedUser?.name}
+        setMessage={setMessage}
+        loggedUser={logedInUser}
+        selectedUser={selectedUser}
       />
     </div>
   );

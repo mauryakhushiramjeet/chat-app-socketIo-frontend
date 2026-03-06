@@ -10,7 +10,8 @@ export const NotificationContextProvider = ({ children }) => {
     groupName: null,
   });
   const [showNotification, setShowNotification] = useState(false);
-
+  const [fcmToken, setFcmTokens] = useState({});
+  const [blockedUsers, setBlockedUsers] = useState([]);
   return (
     <NotificationContext.Provider
       value={{
@@ -18,6 +19,10 @@ export const NotificationContextProvider = ({ children }) => {
         setNotificationData,
         showNotification,
         setShowNotification,
+        fcmToken,
+        setFcmTokens,
+        blockedUsers,
+        setBlockedUsers,
       }}
     >
       {children}

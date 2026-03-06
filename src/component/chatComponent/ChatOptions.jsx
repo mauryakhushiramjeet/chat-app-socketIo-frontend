@@ -3,6 +3,9 @@ import { RiDeleteBinLine } from "react-icons/ri";
 import { RiUserLine } from "react-icons/ri";
 import { MdBlock } from "react-icons/md";
 import { ProfileContext } from "../../utills/context/ProfileContext";
+import { useDispatch } from "react-redux";
+import { blockUser, unBlockUser } from "../../store/actions/blockActions";
+import { NotificationContext } from "../../utills/context/NotificationContext";
 
 const ChatOptions = ({
   open,
@@ -14,7 +17,10 @@ const ChatOptions = ({
 }) => {
   const optionsRef = useRef(null);
   const { setShowProfile } = useContext(ProfileContext);
+  const { blockedUsers, setBlockedUsers } = useContext(NotificationContext);
+  console.log(blockedUsers, "block user", selectedUser?.id);
 
+  const dispatch = useDispatch();
   useEffect(() => {
     const toggleOption = (e) => {
       if (optionsRef.current && !optionsRef.current.contains(e.target)) {
@@ -59,7 +65,52 @@ const ChatOptions = ({
     setShowChatOptions(false);
   };
   const handleBlockUser = () => {
-    console.log("user block");
+    console.log("block user", {
+      blockerId: loggedUser.id,
+      blockedId: selectedUser.id,
+    });
+    dispatch(
+      blockUser({ blockerId: loggedUser.id, blockedId: selectedUser.id }),
+    )
+      .unwrap()
+      .then((res) => {
+        console.log(res);
+        setShowChatOptions(false);
+        setBlockedUsers([
+          ...blockedUsers,
+          { blocked_user_id: selectedUser?.id },
+        ]);
+      })
+      .catch((err) => console.log(err));
+  };
+  const handleUnblockUser = () => {
+    console.log("unblock user", {
+      blockerId: loggedUser.id,
+      blockedId: selectedUser.id,
+    });
+    dispatch(
+      unBlockUser({ blockerId: loggedUser.id, blockedId: selectedUser.id }),
+    )
+      .unwrap()
+      .then((res) => {
+        console.log(res);
+        setShowChatOptions(false);
+        setBlockedUsers(
+          blockedUsers.filter((b) => b?.blocked_user_id !== selectedUser?.id),
+        );
+      })
+      .catch((err) => console.log(err));
+  };
+  console.log(blockedUsers, "block user", selectedUser?.id);
+  const handleBlockUnblockUser = () => {
+    const userAlreadyBlocked = blockedUsers.find(
+      (b) => b?.blocked_user_id === selectedUser?.id,
+    );
+    if (userAlreadyBlocked) {
+      handleUnblockUser();
+    } else {
+      handleBlockUser();
+    }
   };
   const chatOptionsButtons = [
     {
@@ -83,11 +134,14 @@ const ChatOptions = ({
       onClick: handleViewProfile,
     },
     {
-      name: "Block User",
+      name:
+        selectedUser.type === "chat"
+          ? `${blockedUsers.find((b) => b?.blocked_user_id === selectedUser?.id) ? "Unblock User" : "Block User"}`
+          : "exite Group",
       icon: (
         <MdBlock size={18} className="text-red-500 group-hover:text-red-800" />
       ),
-      onClick: handleBlockUser,
+      onClick: handleBlockUnblockUser,
     },
   ];
   if (!open) return;

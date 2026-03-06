@@ -41,6 +41,8 @@ const SignupPage = ({ setIsOtpSend, setCurrentForm }) => {
             if (res.success) {
               toast.success(res.message);
               localStorage.setItem("userData", JSON.stringify(res.data));
+              localStorage.seItem("token", res.token);
+
               setIsOtpSend(true);
               setLoading(false);
             }

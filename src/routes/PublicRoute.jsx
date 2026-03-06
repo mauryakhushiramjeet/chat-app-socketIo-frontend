@@ -2,8 +2,8 @@ import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
 const PublicRoute = () => {
-  const user = JSON.parse(localStorage.getItem("userData"));
-  return user && user?.isEmailVerify ? (
+  const user = localStorage.getItem("token");
+  return  user? (
     <Navigate to="/chat" replace />
   ) : (
     <Outlet />

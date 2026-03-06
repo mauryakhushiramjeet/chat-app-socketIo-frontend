@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useContext } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { GoSearch } from "react-icons/go";
-import { updateProfileThunk } from "../../store/actions/userActions";
+import { logOut, updateProfileThunk } from "../../store/actions/userActions";
 import {
   FaCheck,
   FaCamera,
@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa"; // Added FaUsers
 import { MdGroupAdd } from "react-icons/md";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useBlocker, useNavigate } from "react-router-dom";
 import {
   createGroup,
   getUserSeenMsgDetaiils,
@@ -22,6 +22,7 @@ import { ProfileContext } from "../../utills/context/ProfileContext";
 import { MessageStatus } from "../../helper/chatPageHelper";
 import SubmitButton from "../SubmitButton";
 import SidebarPendingRequests from "../sidebarComponent/SidebarPendingRequests";
+import { NotificationContext } from "../../utills/context/NotificationContext";
 
 const Sidebar = ({
   logedInUser,
@@ -68,6 +69,7 @@ const Sidebar = ({
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const storeFriends = useSelector((store) => store.friends);
+  const { fcmToken, blockedUsers } = useContext(NotificationContext);
   const dispatch = useDispatch();
   const friends = useMemo(() => {
     return storeFriends?.user?.friends;
@@ -171,6 +173,8 @@ const Sidebar = ({
     );
     setSearchingUser(filterUsers);
   }, [searchText, friends]);
+
+  // console.log(blockedUsers, "block user");
 
   useEffect(() => {
     if (!logedInUser) return;
@@ -289,6 +293,7 @@ const Sidebar = ({
     socket.on(
       "newMessage",
       ({ response, targetChatUserId, conversationId, type, lastMessageId }) => {
+        console.log("kshdfkjhkfhhfjwhfjhhfkjhef");
         setUsers((prevUsers) => {
           const conversationIndex = prevUsers.findIndex(
             (item) =>
@@ -565,11 +570,21 @@ const Sidebar = ({
   }, [socket, logedInUser]);
   const handleLogout = () => {
     setLoading(true);
-
-    localStorage.removeItem("userData");
-    setShowProfile(false);
-    setLoading(false);
-    navigate("/");
+    dispatch(logOut(fcmToken))
+      .unwrap()
+      .then((res) => {
+        if (res.success) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("userData");
+          setShowProfile(false);
+          setLoading(false);
+          navigate("/");
+        }
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
 
   const handleUserChatSelect = (userCoversation) => {
@@ -937,7 +952,9 @@ const Sidebar = ({
             userCoversation?.status === "Delivered" &&
             userCoversation?.messageSenderId !== logedInUser?.id &&
             !isSelected;
-
+          const isUserBlockd = blockedUsers.find(
+            (b) => b?.blocked_user_id === userCoversation?.id,
+          );
           const isOnline = onlineUsers.includes(String(userCoversation?.id));
           const isTyping =
             typingUserId[`chat_${userCoversation?.id}`] &&
@@ -958,6 +975,7 @@ const Sidebar = ({
               ? "bg-[#ffffff0f]/5 hover:bg-[#ffffff1a]"
               : "hover:bg-white/10"
         }
+
       `}
             >
               <div className="relative">
@@ -1009,11 +1027,19 @@ const Sidebar = ({
                       </span>
                     ) : (
                       <div className="flex items-center gap-1">
-                        {userCoversation?.type === "chat" &&
-                          userCoversation?.messageSenderId ===
-                            logedInUser?.id && (
-                            <MessageStatus status={userCoversation?.status} />
-                          )}
+                        {isUserBlockd ? (
+                          ""
+                        ) : (
+                          <>
+                            {userCoversation?.type === "chat" &&
+                              userCoversation?.messageSenderId ===
+                                logedInUser?.id && (
+                                <MessageStatus
+                                  status={userCoversation?.status}
+                                />
+                              )}
+                          </>
+                        )}
                         <p
                           className={`truncate text-xs xl:text-sm transition-all ${
                             isSelected
@@ -1023,7 +1049,9 @@ const Sidebar = ({
                                 : "text-white/40 font-normal"
                           }`}
                         >
-                          {userCoversation?.lastMessage}
+                          {isUserBlockd
+                            ? "User has been blocked"
+                            : userCoversation?.lastMessage}
                         </p>
                       </div>
                     )}

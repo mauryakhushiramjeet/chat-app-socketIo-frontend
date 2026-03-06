@@ -36,10 +36,8 @@ export const loginUser = createAsyncThunk(
       const response = await axiosInstance.post("/login", data);
       return response.data;
     } catch (error) {
-      console.log(error)
-      return rejectWithValue(
-        error?.response?.data?.message || error?.message,
-      );
+      console.log(error);
+      return rejectWithValue(error?.response?.data?.message || error?.message);
     }
   },
 );
@@ -52,9 +50,8 @@ export const getAllFriends = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
- return rejectWithValue(
-        error?.response?.data?.message || error?.message,
-      );    }
+      return rejectWithValue(error?.response?.data?.message || error?.message);
+    }
   },
 );
 export const resetPassword = createAsyncThunk(
@@ -68,9 +65,8 @@ export const resetPassword = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
- return rejectWithValue(
-        error?.response?.data?.message || error?.message,
-      );    }
+      return rejectWithValue(error?.response?.data?.message || error?.message);
+    }
   },
 );
 export const getConversationsUsers = createAsyncThunk(
@@ -83,9 +79,8 @@ export const getConversationsUsers = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
- return rejectWithValue(
-        error?.response?.data?.message || error?.message,
-      );    }
+      return rejectWithValue(error?.response?.data?.message || error?.message);
+    }
   },
 );
 
@@ -97,8 +92,19 @@ export const updateProfileThunk = createAsyncThunk(
       return response.data;
     } catch (error) {
       console.log("AXIOS ERROR:", error.response);
- return rejectWithValue(
-        error?.response?.data?.message || error?.message,
-      );    }
+      return rejectWithValue(error?.response?.data?.message || error?.message);
+    }
+  },
+);
+
+export const logOut = createAsyncThunk(
+  "auth/logout",
+  async (fcmToken, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post("/logout", {fcmToken});
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error?.response?.data?.message || error?.message);
+    }
   },
 );

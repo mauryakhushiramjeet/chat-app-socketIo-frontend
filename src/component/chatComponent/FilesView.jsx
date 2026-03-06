@@ -89,8 +89,8 @@ const FilesView = ({ msg }) => {
               // swiper-prev
               disabled={isFirstImage}
               className={`${
-                viewFiles?.length > 1 ? "block" : "hidden"
-              } swiper-prev absolute left-[-25px] md:left-9 text-xlxs:block  md:text-3xl p-2 md:p-3 rounded-full text-gray-100 hover:text-[#564BD4] ${
+                viewFiles?.length > 1 ? "xs:block" : "hidden"
+              } swiper-prev absolute left-[-25px] md:left-9 text-xl  md:text-3xl p-2 md:p-3 rounded-full text-gray-100 hover:text-[#564BD4] ${
                 isFirstImage ? "cursor-default" : "cursor-pointer"
               }`}
               title="Previous"
@@ -127,8 +127,8 @@ const FilesView = ({ msg }) => {
               // swiper-next
               disabled={isLastImage}
               className={`${
-                viewFiles?.length > 1 ? "block" : "hidden"
-              }  absolute right-[-25px] md:right-9 text-xl md:text-3xl hidden xs:block p-2 md:p-3 rounded-full text-gray-100 hover:text-[#564BD4] ${
+                viewFiles?.length > 1 ? "xs:block" : "hidden"
+              }   absolute right-[-25px] md:right-9 text-xl md:text-3xl hidden  p-2 md:p-3 rounded-full text-gray-100 hover:text-[#564BD4] ${
                 isLastImage ? "cursor-default" : "cursor-pointer"
               }`}
               title="Next"
