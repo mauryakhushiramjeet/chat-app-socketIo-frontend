@@ -774,7 +774,6 @@ const ChatPage = () => {
       setIsChatLoading(false);
       return;
     }
-    console.log(messageStore?.isLoading, "see actual loading");
     if (messageStore?.fisrtMessageId) {
       setFirstMessageId(messageStore?.fisrtMessageId);
     }
@@ -787,7 +786,6 @@ const ChatPage = () => {
     }
     isFetchingOldRef.current = false;
     // setIsPagination(false);
-    console.log(messageStore, "store");
   }, [
     messageStore,
     messageStore?.messages,
@@ -851,13 +849,10 @@ const ChatPage = () => {
 
     if (chatBottomRef.current) {
       const rect = chatBottomRef.current.getBoundingClientRect();
-      console.log(rect.top, window.innerHeight);
       if (rect.top > window.innerHeight) {
         setScrollToBottom(true);
-        console.log("bottom is below screen");
       } else {
         setScrollToBottom(false);
-        console.log("bottom is visible");
       }
     }
     const el = chatTopRef.current;

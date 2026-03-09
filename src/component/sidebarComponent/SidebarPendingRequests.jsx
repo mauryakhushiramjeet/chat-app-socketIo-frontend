@@ -16,7 +16,6 @@ const SidebarPendingRequests = ({ socket, logedInUser, setUsers }) => {
     if (!socket) return;
 
     socket.on("chatRequest", ({ senderName, conversationId }) => {
-      console.log("get request", senderName, conversationId);
       setPendingRequestes((prev) => {
         const requestExists = prev.some(
           (req) => req.conversationId === conversationId,
@@ -35,7 +34,6 @@ const SidebarPendingRequests = ({ socket, logedInUser, setUsers }) => {
         .unwrap()
         .then((res) => {
           if (res.success) {
-            // console.log(res, "res ponse of pending reuest");
             setPendingRequestes(res?.myAllPendingRequest || []);
           }
         })
@@ -44,7 +42,6 @@ const SidebarPendingRequests = ({ socket, logedInUser, setUsers }) => {
   }, [logedInUser, dispatch]);
 
   const handleAccept = (conversationId) => {
-    console.log(conversationId);
     dispatch(
       acceptChatRequest({ conversationId, loggedInUserId: logedInUser?.id }),
     )
@@ -60,15 +57,7 @@ const SidebarPendingRequests = ({ socket, logedInUser, setUsers }) => {
             lastMessageId,
             lastMessageCreatedAt,
           } = res.formateAcceptedUserSideList;
-          console.log(
-            id,
-            type,
-            chatUser,
-            lastMessage,
-            lastMessageId,
-            lastMessageCreatedAt,
-            "detailes",
-          );
+        
           setUsers((prevUsers) => [
             {
               id: id,

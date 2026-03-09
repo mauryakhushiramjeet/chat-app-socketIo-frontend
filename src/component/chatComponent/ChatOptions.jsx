@@ -18,7 +18,6 @@ const ChatOptions = ({
   const optionsRef = useRef(null);
   const { setShowProfile } = useContext(ProfileContext);
   const { blockedUsers, setBlockedUsers } = useContext(NotificationContext);
-  console.log(blockedUsers, "block user", selectedUser?.id);
 
   const dispatch = useDispatch();
   useEffect(() => {
@@ -31,8 +30,6 @@ const ChatOptions = ({
     return () => window.removeEventListener("mousedown", toggleOption);
   }, []);
   const handleClearChat = () => {
-    console.log("clear chat");
-    // if()
     if (messages?.length === 0) {
       setShowChatOptions(false);
       return;
@@ -60,21 +57,16 @@ const ChatOptions = ({
     setShowChatOptions(false);
   };
   const handleViewProfile = () => {
-    console.log("user view");
     setShowProfile(true);
     setShowChatOptions(false);
   };
   const handleBlockUser = () => {
-    console.log("block user", {
-      blockerId: loggedUser.id,
-      blockedId: selectedUser.id,
-    });
+  
     dispatch(
       blockUser({ blockerId: loggedUser.id, blockedId: selectedUser.id }),
     )
       .unwrap()
       .then((res) => {
-        console.log(res);
         setShowChatOptions(false);
         setBlockedUsers([
           ...blockedUsers,
@@ -84,16 +76,12 @@ const ChatOptions = ({
       .catch((err) => console.log(err));
   };
   const handleUnblockUser = () => {
-    console.log("unblock user", {
-      blockerId: loggedUser.id,
-      blockedId: selectedUser.id,
-    });
+   
     dispatch(
       unBlockUser({ blockerId: loggedUser.id, blockedId: selectedUser.id }),
     )
       .unwrap()
       .then((res) => {
-        console.log(res);
         setShowChatOptions(false);
         setBlockedUsers(
           blockedUsers.filter((b) => b?.blocked_user_id !== selectedUser?.id),
@@ -101,7 +89,6 @@ const ChatOptions = ({
       })
       .catch((err) => console.log(err));
   };
-  console.log(blockedUsers, "block user", selectedUser?.id);
   const handleBlockUnblockUser = () => {
     const userAlreadyBlocked = blockedUsers.find(
       (b) => b?.blocked_user_id === selectedUser?.id,

@@ -23,70 +23,14 @@ const PinPongNotification = () => {
   const notificationTimeOut = useRef(null);
   const handleSend = (e) => {
     e.preventDefault();
-    console.log("Reply sent:", reply);
     setReply("");
   };
-  // useEffect(() => {
-  //   socket.on(
-  //     "receiveNotification",
-  //     ({
-  //       senderId,
-  //       senderName,
-  //       senderImage,
-  //       message,
-  //       chatType,
-  //       messageId,
-  //       groupId,
-  //       groupName,
-  //     }) => {
-  //       // console.log(
-  //       //   "sender id",
-  //       //   senderId,
-  //       //   "sender name",
-  //       //   senderName,
-  //       //   "image",
-  //       //   senderImage,
-  //       //   "MESSAGE",
-  //       //   message,
-  //       //   "TYPE",
-  //       //   chatType,
-  //       //   "messageiD",
-  //       //   messageId,
-  //       //   "g id",
-  //       //   groupId,
-  //       //   "groupManme",
-  //       //   groupName,
-  //       // );
 
-  //       const activeChatUserId =
-  //         chatType === "group"
-  //           ? (!selectedUser || Number(selectedUser?.mainId)) ===
-  //             Number(groupId)
-  //           : (!selectedUser || Number(selectedUser?.id)) === Number(senderId);
-  //       console.log(activeChatUserId, "is chat is open");
-  //       if (activeChatUserId) return;
-  //       setNotificationUserDetailes({
-  //         name: senderName,
-  //         message: message,
-  //         image: senderImage,
-  //         type: chatType,
-  //         groupName: chatType === "group" ? groupName : null,
-  //       });
-  //       setNtfDetailes({
-  //         replyMessageSenderId: senderId,
-  //         replyToMessageId: messageId,
-  //       });
-
-  //       setShowNotification(true);
-  //     },
-  //   );
-  // }, [socket, selectedUser, loggedUser]);
   useEffect(() => {
     if (!showNotification) return;
 
     if (isHovered) {
       clearTimeout(notificationTimeOut?.current);
-      console.log("clerrrrr");
       return;
     }
     notificationTimeOut.current = setTimeout(() => {
@@ -98,7 +42,6 @@ const PinPongNotification = () => {
         type: "",
         groupName: null,
       });
-      console.log("close");
     }, 3000);
   }, [showNotification, notificationData, isHovered]);
   return (
@@ -123,7 +66,6 @@ const PinPongNotification = () => {
           <IoClose
             onClick={() => {
               setShowNotification(false);
-              console.log("btn click");
             }}
             className="cursor-pointer opacity-70 hover:opacity-100 transition-opacity text-xl"
           />

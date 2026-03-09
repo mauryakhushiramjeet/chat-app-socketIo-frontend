@@ -60,7 +60,6 @@ const LoginPage = ({ setCurrentForm, currentForm, setIsOtpSend }) => {
 
             if (res.success) {
               toast.success(res.message);
-              console.log(res);
               localStorage.setItem("userData", JSON.stringify(res.user));
               localStorage.setItem("token", res.token);
 

@@ -174,7 +174,6 @@ const Sidebar = ({
     setSearchingUser(filterUsers);
   }, [searchText, friends]);
 
-  // console.log(blockedUsers, "block user");
 
   useEffect(() => {
     if (!logedInUser) return;
@@ -293,7 +292,6 @@ const Sidebar = ({
     socket.on(
       "newMessage",
       ({ response, targetChatUserId, conversationId, type, lastMessageId }) => {
-        console.log("kshdfkjhkfhhfjwhfjhhfkjhef");
         setUsers((prevUsers) => {
           const conversationIndex = prevUsers.findIndex(
             (item) =>
@@ -362,7 +360,6 @@ const Sidebar = ({
     });
 
     socket.on("groupCreate", ({ id, name, image, members }) => {
-      console.log("trigger create group");
       setUsers((prev) => [
         ...prev,
         {
@@ -502,7 +499,6 @@ const Sidebar = ({
           }
         });
     } catch (err) {
-      console.log(err, "profile update error");
       setProfileLoading(false);
     }
   };
@@ -762,7 +758,6 @@ const Sidebar = ({
               <p
                 onClick={() => {
                   setViewProfileImage(profile?.image);
-                  console.log(profile?.image);
                 }}
                 className="text-sm hover:underline cursor-pointer pt-1 text-gray-200"
               >
@@ -940,14 +935,8 @@ const Sidebar = ({
         </div>
 
         {(sortedUsers || []).map((userCoversation) => {
-          // --- LOGIC VARIABLES (Do not change) ---
           const isSelected = selectedUser?.id === userCoversation?.id;
-          // console.log(
-          //   selectedUser,
-          //   "selected user",
-          //   userCoversation,
-          //   "conversation",
-          // );
+        
           const isUnread =
             userCoversation?.status === "Delivered" &&
             userCoversation?.messageSenderId !== logedInUser?.id &&

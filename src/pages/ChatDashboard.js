@@ -27,9 +27,7 @@ const ChatDashboard = () => {
       });
 
       setFcmTokens(fcmToken);
-      // console.log(fcmToken, "fcm token");
       dispatch(saveFcmToken({ fcmToken, userId: loggedUserDetailes?.id }));
-      // console.log(fcmToken);
     } else if (permission === "default") {
       alert("permission notification should appear");
     } else if (permission === "denied") {
@@ -43,7 +41,6 @@ const ChatDashboard = () => {
   }, []);
   useEffect(() => {
     const unsubscribe = onMessage(messaging, (payload) => {
-      console.log("Message received action:", payload);
 
       // Check if notification permission is granted
       if (Notification.permission === "granted") {
